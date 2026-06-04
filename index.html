@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Finanzas Personales</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --text: #1c1c1e;
+    --text2: #636366;
+    --text3: #aeaeb2;
+    --sep: #e5e5ea;
+    --blue: #007aff;
+    --green: #34c759;
+    --red: #ff3b30;
+    --orange: #ff9500;
+    --yellow: #ffcc00;
+    --purple: #af52de;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --nav-h: 80px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body, #root { height: 100%; overflow: hidden; }
+  body {
+    font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg); color: var(--text); overscroll-behavior: none;
+  }
+  #root { display: flex; flex-direction: column; max-width: 430px; margin: 0 auto; position: relative; }
+
+  /* SCREEN STACK */
+  .app-stack { position: relative; flex: 1; overflow: hidden; }
+  .screen-view {
+    position: absolute; inset: 0;
+    overflow-y: auto; overflow-x: hidden;
+    padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 24px);
+    transition: transform .35s cubic-bezier(.4,0,.2,1), opacity .35s;
+    will-change: transform;
+  }
+  .screen-view.slide-in  { transform: translateX(0); opacity: 1; }
+  .screen-view.slide-out { transform: translateX(-30%); opacity: 0; pointer-events: none; }
+  .screen-view.slide-right { transform: translateX(100%); opacity: 0; pointer-events: none; }
+
+  /* HEADER */
+  .screen-header { padding: 56px 20px 8px; }
+  .screen-title { font-size: 34px; font-weight: 700; letter-spacing: -.5px; }
+  .screen-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .detail-header {
+    padding: 52px 16px 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 3px;
+    background: none; border: none; color: var(--blue);
+    font-size: 17px; font-weight: 400; cursor: pointer; padding: 4px 0;
+  }
+  .back-btn svg { width: 20px; height: 20px; }
+
+  /* NAV */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    height: calc(var(--nav-h) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid var(--sep);
+    display: flex; align-items: flex-start; justify-content: space-around;
+    z-index: 50;
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 3px; padding-top: 10px; background: none; border: none; cursor: pointer;
+    color: var(--text3); transition: color .2s;
+  }
+  .nav-btn.active { color: var(--blue); }
+  .nav-btn svg { width: 26px; height: 26px; }
+  .nav-btn span { font-size: 10px; font-weight: 500; }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+    right: calc(50% - 210px + 16px);
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--blue); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,122,255,.4);
+    border: none; cursor: pointer; z-index: 49;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .fab:active { transform: scale(.93); }
+
+  /* CARD WIDGET (list) */
+  .card-list-item {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin: 0 16px 10px;
+    overflow: hidden; animation: fadeUp .3s ease both;
+    cursor: pointer; transition: transform .15s, box-shadow .15s;
+    -webkit-user-select: none; user-select: none;
+  }
+  .card-list-item:active { transform: scale(.985); box-shadow: 0 1px 8px rgba(0,0,0,.06); }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* CC HEADER */
+  .cc-header {
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 15px 16px 13px;
+    color: #fff; position: relative; overflow: hidden;
+  }
+  .cc-header::before {
+    content: ''; position: absolute; top: -30px; right: -30px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: rgba(255,255,255,.1);
+  }
+  .cc-header::after {
+    content: ''; position: absolute; bottom: -40px; right: 20px;
+    width: 90px; height: 90px; border-radius: 50%;
+    background: rgba(255,255,255,.07);
+  }
+  .cc-name { font-size: 15px; font-weight: 700; }
+  .cc-chips { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+  .cc-chip { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; background: rgba(255,255,255,.2); }
+  .cc-amount { font-size: 27px; font-weight: 700; margin-top: 9px; letter-spacing: -.8px; }
+  .cc-amount-label { font-size: 11px; opacity: .7; margin-top: 1px; }
+  .cc-body { padding: 13px 16px 13px; }
+  .cc-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .cc-stat { display: flex; flex-direction: column; }
+  .cc-stat-val { font-size: 15px; font-weight: 600; }
+  .cc-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .bar-wrap { margin: 11px 0 0; }
+  .bar-bg { background: var(--sep); border-radius: 4px; height: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+  .bar-labels { display: flex; justify-content: space-between; margin-top: 5px; }
+  .bar-labels span { font-size: 11px; color: var(--text3); }
+  .cc-days { display: flex; gap: 10px; margin-top: 8px; }
+  .cc-day-badge {
+    flex: 1; background: var(--bg); border-radius: var(--radius-sm);
+    padding: 8px 6px; text-align: center;
+  }
+  .cc-day-badge .num { font-size: 20px; font-weight: 700; }
+  .cc-day-badge .lbl { font-size: 10px; color: var(--text2); margin-top: 1px; }
+
+  /* DETAIL TABS */
+  .detail-tabs {
+    display: flex; margin: 4px 16px 0;
+    background: var(--bg); border-radius: var(--radius-sm);
+    padding: 3px;
+  }
+  .detail-tab {
+    flex: 1; padding: 7px 0; border-radius: 8px;
+    font-size: 13px; font-weight: 600; border: none;
+    background: none; color: var(--text2); cursor: pointer;
+    transition: all .2s;
+  }
+  .detail-tab.active { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+  /* EXPENSE ITEMS — compact */
+  .expense-item-sm {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; cursor: pointer;
+    transition: background .12s;
+  }
+  .expense-item-sm:active { background: var(--bg); }
+  .expense-icon-sm {
+    width: 30px; height: 30px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; background: var(--bg);
+  }
+  .expense-info-sm { flex: 1; min-width: 0; }
+  .expense-desc-sm { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .expense-meta-sm { font-size: 11px; color: var(--text2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .expense-amt-sm { font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .expense-amt-sm.paid { color: var(--text3); text-decoration: line-through; }
+
+  /* OLD expense items (kept for list view if any) */
+  .list-wrap { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin: 12px 16px; }
+
+  /* CHECK BUTTON */
+  .check-btn {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--sep);
+    background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; flex-shrink: 0;
+  }
+  .check-btn.checked { background: var(--green); border-color: var(--green); }
+  .check-btn svg { width: 13px; height: 13px; color: #fff; }
+
+  /* MSI */
+  .msi-item { padding: 14px 16px; border-bottom: 1px solid var(--sep); }
+  .msi-item:last-child { border-bottom: none; }
+  .msi-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .msi-desc { font-size: 15px; font-weight: 500; }
+  .msi-total { font-size: 15px; font-weight: 600; color: var(--blue); }
+  .msi-meta { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .msi-dots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .msi-dot {
+    width: 30px; height: 30px; border-radius: 8px;
+    border: 2px solid var(--sep); background: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: var(--text2);
+    cursor: pointer; transition: all .2s; line-height: 1; text-align: center;
+  }
+  .msi-dot.paid { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .msi-dot.pre-paid { background: var(--text3); border-color: var(--text3); color: #fff; opacity: .7; }
+
+  /* CATEGORY CHART */
+  .cat-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; border-bottom: 1px solid var(--sep);
+  }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-emoji { font-size: 22px; width: 36px; text-align: center; flex-shrink: 0; }
+  .cat-info { flex: 1; }
+  .cat-name { font-size: 14px; font-weight: 500; }
+  .cat-bar-wrap { margin-top: 4px; }
+  .cat-amount { font-size: 14px; font-weight: 600; flex-shrink: 0; }
+
+  /* MODAL / SHEET */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    z-index: 100; display: flex; align-items: flex-end;
+    animation: fadeIn .2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .sheet {
+    width: 100%; max-width: 430px; margin: 0 auto;
+    background: var(--card); border-radius: 20px 20px 0 0;
+    padding: 0 0 calc(24px + var(--safe-bottom));
+    max-height: 92vh; overflow-y: auto;
+    animation: slideUp .3s cubic-bezier(.4,0,.2,1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--sep); margin: 10px auto 4px; }
+  .sheet-title { font-size: 17px; font-weight: 700; text-align: center; padding: 10px 20px 14px; }
+  .sheet-body { padding: 0 20px; }
+  .field { margin-bottom: 14px; }
+  .field label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 6px; }
+  .field input, .field select, .field textarea {
+    width: 100%; background: var(--bg); border: none; border-radius: var(--radius-sm);
+    padding: 12px 14px; font-size: 16px; color: var(--text);
+    font-family: inherit; outline: none; -webkit-appearance: none; appearance: none;
+    transition: background .15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { background: #e9e9ef; }
+  .field textarea { resize: none; min-height: 72px; }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .sheet-actions { display: flex; gap: 10px; padding: 16px 20px 0; }
+  .btn-primary {
+    flex: 1; padding: 14px; border-radius: var(--radius-sm);
+    background: var(--blue); color: #fff;
+    font-size: 16px; font-weight: 600; border: none; cursor: pointer;
+  }
+  .btn-danger { padding: 14px; border-radius: var(--radius-sm); background: rgba(255,59,48,.1); color: var(--red); font-size: 16px; font-weight: 600; border: none; cursor: pointer; }
+  .btn-secondary { flex: 1; padding: 14px; border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 16px; font-weight: 600; border: none; cursor: pointer; }
+
+  /* TOGGLE */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); border-radius: var(--radius-sm);
+    padding: 13px 14px; margin-bottom: 14px;
+  }
+  .toggle-label { font-size: 14px; font-weight: 500; flex: 1; padding-right: 12px; }
+  .toggle-label small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+  .toggle-switch {
+    position: relative; width: 51px; height: 31px; flex-shrink: 0;
+    border-radius: 16px; background: #e5e5ea;
+    cursor: pointer; border: none; transition: background .25s;
+  }
+  .toggle-switch.on { background: var(--green); }
+  .toggle-knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 27px; height: 27px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+  }
+  .toggle-switch.on .toggle-knob { transform: translateX(20px); }
+
+  /* COLOR PICKER */
+  .color-picker { display: flex; gap: 10px; flex-wrap: wrap; }
+  .color-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform .15s; }
+  .color-dot.selected { border-color: var(--text); transform: scale(1.15); }
+
+  /* GRADIENTS */
+  .grad-yellow  { background: linear-gradient(135deg, #c8971a, #e8b332); }
+  .grad-red     { background: linear-gradient(135deg, #b71c1c, #e53935); }
+  .grad-blue    { background: linear-gradient(135deg, #0d47a1, #1976d2); }
+  .grad-skyblue { background: linear-gradient(135deg, #0277bd, #039be5); }
+  .grad-purple  { background: linear-gradient(135deg, #6a1b9a, #ab47bc); }
+  .grad-orange  { background: linear-gradient(135deg, #bf360c, #f4511e); }
+  .grad-green   { background: linear-gradient(135deg, #1b5e20, #388e3c); }
+
+  /* COMMITMENTS */
+  .month-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 12px 16px; scrollbar-width: none; }
+  .month-tabs::-webkit-scrollbar { display: none; }
+  .month-tab { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; background: var(--bg); color: var(--text2); border: none; cursor: pointer; transition: all .2s; }
+  .month-tab.active { background: var(--blue); color: #fff; }
+  .commit-item { padding: 14px 16px; border-bottom: 1px solid var(--sep); }
+  .commit-item:last-child { border-bottom: none; }
+  .commit-top { display: flex; justify-content: space-between; align-items: center; }
+  .commit-desc { font-size: 15px; font-weight: 500; }
+  .commit-amount { font-size: 15px; font-weight: 600; }
+  .commit-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .summary-row { display: flex; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--sep); }
+  .summary-row span { font-size: 13px; color: var(--text2); }
+  .summary-row strong { font-size: 13px; font-weight: 700; }
+
+  .item-edit-btn { background: none; border: none; color: var(--blue); font-size: 12px; font-weight: 600; cursor: pointer; padding: 3px 0; opacity: .7; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--text2); }
+  .empty .icon { font-size: 42px; margin-bottom: 8px; }
+  .empty p { font-size: 14px; }
+  select option { color: #000; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+// ─── CONSTANTS ──────────────────────────────────────────────────────────────
+const COLORS = [
+  { id:'yellow',  cls:'grad-yellow',  hex:'#e8b332' },
+  { id:'red',     cls:'grad-red',     hex:'#e53935' },
+  { id:'blue',    cls:'grad-blue',    hex:'#1976d2' },
+  { id:'skyblue', cls:'grad-skyblue', hex:'#039be5' },
+  { id:'purple',  cls:'grad-purple',  hex:'#ab47bc' },
+  { id:'orange',  cls:'grad-orange',  hex:'#f4511e' },
+  { id:'green',   cls:'grad-green',   hex:'#388e3c' },
+];
+
+const CATS = [
+  '🛒 Supermercado','🍽️ Comida','⛽ Gasolina','🚗 Auto',
+  '🏥 Salud','🎬 Entretenimiento','👕 Ropa','🏠 Hogar',
+  '🔧 Servicios','✈️ Viajes','🎓 Educación','💊 Farmacia','📦 Otro',
+];
+
+const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const today = new Date();
+const currentMonth = today.getMonth();
+const currentYear  = today.getFullYear();
+const currentMK    = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+
+const uid    = () => Math.random().toString(36).slice(2,10);
+const fmt    = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
+const monthKey = (y,m) => `${y}-${String(m).padStart(2,'0')}`;
+function daysUntil(day) {
+  const d = today.getDate();
+  if (day >= d) return day - d;
+  const next = new Date(today.getFullYear(), today.getMonth()+1, day);
+  return Math.round((next - today) / 86400000);
+}
+
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+function useStorage(key, init) {
+  const [val, setVal] = useState(() => {
+    try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : init; } catch { return init; }
+  });
+  const set = useCallback(v => {
+    setVal(prev => {
+      const next = typeof v === 'function' ? v(prev) : v;
+      localStorage.setItem(key, JSON.stringify(next));
+      return next;
+    });
+  }, [key]);
+  return [val, set];
+}
+
+// ─── ICONS ───────────────────────────────────────────────────────────────────
+const IconCards = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="3"/><line x1="2" y1="10" x2="22" y2="10"/>
+  </svg>
+);
+const IconList = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+    <circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/>
+  </svg>
+);
+const IconCheck = () => (
+  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="2,6 5,9 10,3"/>
+  </svg>
+);
+const IconPlus = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
+const IconChevronLeft = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6"/>
+  </svg>
+);
+const IconChevronRight = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6"/>
+  </svg>
+);
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function CheckBtn({ checked, onToggle }) {
+  return (
+    <button className={`check-btn ${checked?'checked':''}`} onClick={e=>{e.stopPropagation();onToggle();}}>
+      {checked && <IconCheck/>}
+    </button>
+  );
+}
+
+function Toggle({ on, onToggle, label, sub }) {
+  return (
+    <div className="toggle-row">
+      <div className="toggle-label">
+        {label}
+        {sub && <small>{sub}</small>}
+      </div>
+      <button className={`toggle-switch ${on?'on':''}`} onClick={onToggle}>
+        <div className="toggle-knob"/>
+      </button>
+    </div>
+  );
+}
+
+function ProgressBar({ pct, color='var(--blue)' }) {
+  const w = Math.min(100, Math.max(0, pct));
+  const bg = w > 85 ? 'var(--red)' : w > 60 ? 'var(--orange)' : color;
+  return <div className="bar-bg"><div className="bar-fill" style={{width:`${w}%`,background:bg}}/></div>;
+}
+
+function ColorPicker({ value, onChange }) {
+  return (
+    <div className="color-picker">
+      {COLORS.map(c => (
+        <div key={c.id} className={`color-dot ${c.cls} ${value===c.id?'selected':''}`} onClick={()=>onChange(c.id)}/>
+      ))}
+    </div>
+  );
+}
+
+function Sheet({ title, onClose, children }) {
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="sheet" onClick={e=>e.stopPropagation()}>
+        <div className="sheet-handle"/>
+        <div className="sheet-title">{title}</div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── FINANCIAL MODEL ─────────────────────────────────────────────────────────
+// card.available = exact bank balance entered by user. NEVER mutated.
+//
+// EXPENSES:
+//   toggle OFF + not paid  → bank hasn't charged yet → subtract
+//   toggle OFF + paid      → bank charged, credit freed → no adjustment (net 0 vs base)
+//   toggle ON  + any       → already in base → 0
+//
+// MSI:
+//   paidCount = cuotas pre-existing when user added the MSI (already in base available).
+//   extraPaid = paid.length - paidCount  (cuotas newly palomeaded AFTER adding)
+//   stillOwed = total - paid.length      (cuotas not yet palomeaded)
+//   → each extraPaid cuota adds back to available (bank charged, freed credit)
+//   → each stillOwed cuota subtracts from available (reserved future debt)
+//
+// IMPORTANT: if paidCount is missing (legacy data), treat ALL current paid[] as pre-existing
+//            so opening an old MSI doesn't suddenly move the available balance.
+
+function computeCardTotals(card, expenses, msis, payments=[]) {
+  const totalCredit = parseFloat(card.total)||0;
+  const extension   = parseFloat(card.extension)||0;
+  const baseAvail   = parseFloat(card.available)||0;
+
+  // ── Expense adjustment ──
+  // The toggle (alreadyDiscounted) only affects whether we subtract when NOT paid.
+  // Palomear (paid=true) ALWAYS frees credit — regardless of toggle.
+  //
+  //   alreadyDiscounted=false, paid=false  → bank hasn't charged yet   → subtract
+  //   alreadyDiscounted=false, paid=true   → bank charged, now settled  → +amount (cancel the subtract)
+  //   alreadyDiscounted=true,  paid=false  → bank already has it        → 0 (already in base)
+  //   alreadyDiscounted=true,  paid=true   → paid & settled             → +amount (credit freed)
+  //
+  // Simplified: paid=true always adds back. paid=false only subtracts if NOT already discounted.
+  let expAdj = 0;
+  expenses.forEach(e => {
+    const amount = parseFloat(e.amount)||0;
+    if (e.paid) {
+      expAdj += amount;          // paid: bank charged it AND user settled → credit freed → +
+    } else if (!e.alreadyDiscounted) {
+      expAdj -= amount;          // pending, bank hasn't charged yet → -
+    }
+    // alreadyDiscounted=true + not paid → 0 (already in base, still owed but bank tracks it)
+  });
+
+  // ── MSI adjustment ──
+  // baseAvail already reflects ALL pre-existing paid cuotas (paidCount) — bank took them.
+  // Only NEW cuotas palomeated AFTER adding the MSI to the app add credit back.
+  // newlyPaid = paid.length - paidCount  (cuotas ticked by user in the app)
+  let msiAdj = 0;
+  msis.forEach(m => {
+    const monthly   = parseFloat(m.monthly)||0;
+    const paidKeys  = m.paid||[];
+    const paidCount = m.paidCount !== undefined && m.paidCount !== ''
+      ? parseInt(m.paidCount)||0
+      : paidKeys.length; // legacy: treat all as pre-existing → no adjustment
+    const newlyPaid = Math.max(0, paidKeys.length - paidCount);
+    msiAdj += newlyPaid * monthly;
+  });
+
+  // ── Payments (abonos) ──
+  // Dinero que transferiste a la tarjeta: libera crédito (sube disponible)
+  // y baja tu total a pagar. No se ata a un gasto concreto.
+  const totalPayments = payments.reduce((a,p)=>a+(parseFloat(p.amount)||0),0);
+
+  const realAvail = baseAvail + expAdj + msiAdj + totalPayments;
+  const creditLine = totalCredit + extension;
+  const used    = creditLine - realAvail;
+  const usedPct = creditLine > 0 ? (used / creditLine) * 100 : 0;
+
+  // "Total a pagar": unpaid expenses + remaining MSI cuotas − pagos hechos
+  const unpaidExp = expenses.filter(e=>!e.paid).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+  const pendMsi   = msis.reduce((a,m)=>{
+    const stillOwed = (parseInt(m.total)||0) - (m.paid||[]).length;
+    return a + stillOwed * (parseFloat(m.monthly)||0);
+  },0);
+  const totalToPay = Math.max(0, unpaidExp + pendMsi - totalPayments);
+
+  // ── Cycle breakdown (expenses + MSI cuotas) ──
+  const expThisCycle = expenses.filter(e=>!e.paid && !isNextCycle(e.date, card.cutDay)).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+  const expNextCycle = expenses.filter(e=>!e.paid &&  isNextCycle(e.date, card.cutDay)).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+  const { thisCycleMsi, nextCycleMsi } = getMsiCycleAmounts(msis, card.cutDay);
+
+  // Los pagos reducen primero lo del ciclo actual
+  const thisCycle = Math.max(0, (expThisCycle + thisCycleMsi) - totalPayments);
+
+  return { totalCredit, extension, realAvail, used, usedPct, totalToPay, totalPayments,
+    cutDays: daysUntil(parseInt(card.cutDay)||1),
+    payDays: daysUntil(parseInt(card.payDay)||15),
+    thisCycle,
+    nextCycle:  expNextCycle + nextCycleMsi,
+  };
+}
+
+// ─── CYCLE HELPER ────────────────────────────────────────────────────────────
+// Returns true if a date string falls AFTER the card's cut day (next billing cycle)
+function isNextCycle(dateStr, cutDay) {
+  if (!dateStr) return false;
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const expDate = new Date(y, m-1, d);
+  const cut = parseInt(cutDay)||1;
+  const cutThisMonth = new Date(today.getFullYear(), today.getMonth(), cut);
+  return expDate > cutThisMonth;
+}
+
+// Returns the date string for a given cuota index of an MSI
+function msiCuotaDate(msi, index) {
+  const mi = (parseInt(msi.startMonth) + index) % 12;
+  const yi = parseInt(msi.startYear) + Math.floor((parseInt(msi.startMonth) + index) / 12);
+  // Use day 1 of that month as the billing date
+  return `${yi}-${String(mi+1).padStart(2,'0')}-01`;
+}
+
+// Returns { thisCycleMsi, nextCycleMsi } — unpaid cuotas grouped by current/next cycle
+function getMsiCycleAmounts(msis, cutDay) {
+  let thisCycleMsi = 0, nextCycleMsi = 0;
+  msis.forEach(m => {
+    const total    = parseInt(m.total)||0;
+    const monthly  = parseFloat(m.monthly)||0;
+    const paidKeys = m.paid||[];
+    for (let i = 0; i < total; i++) {
+      const mk = (() => {
+        const mi = (parseInt(m.startMonth)+i)%12;
+        const yi = parseInt(m.startYear)+Math.floor((parseInt(m.startMonth)+i)/12);
+        return monthKey(yi,mi);
+      })();
+      if (paidKeys.includes(mk)) continue; // already paid, skip
+      const dateStr = msiCuotaDate(m, i);
+      if (isNextCycle(dateStr, cutDay)) nextCycleMsi += monthly;
+      else thisCycleMsi += monthly;
+    }
+  });
+  return { thisCycleMsi, nextCycleMsi };
+}
+
+// Próximos 2 meses a pagar de UNA tarjeta: cuotas MSI de ese mes + (mes próximo) gastos del siguiente ciclo
+function cardMonthsToPay(card, expenses, msis) {
+  const cut = card.cutDay;
+  const nextCycleExp = expenses
+    .filter(e=>!e.paid && isNextCycle(e.date, cut))
+    .reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+  const out = [];
+  for (let k=1;k<=2;k++){
+    const d  = new Date(currentYear, currentMonth+k, 1);
+    const mk = monthKey(d.getFullYear(), d.getMonth());
+    let amount = 0;
+    msis.forEach(m=>{
+      const total=parseInt(m.total)||0, monthly=parseFloat(m.monthly)||0, paid=m.paid||[];
+      for (let i=0;i<total;i++){
+        const mi=(parseInt(m.startMonth)+i)%12;
+        const yi=parseInt(m.startYear)+Math.floor((parseInt(m.startMonth)+i)/12);
+        const cuotaMk=monthKey(yi,mi);
+        if (cuotaMk===mk && !paid.includes(cuotaMk)) amount += monthly;
+      }
+    });
+    if (k===1) amount += nextCycleExp; // compras tras el corte se cobran el mes próximo
+    out.push({ label: MONTHS[d.getMonth()], year: d.getFullYear(), amount });
+  }
+  return out;
+}
+
+function CardListItem({ card, expenses, msis, payments, onClick, onEdit }) {
+  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[2];
+  const { realAvail, usedPct, totalToPay, cutDays, payDays } = computeCardTotals(card, expenses, msis, payments);
+  const cardMonths = cardMonthsToPay(card, expenses, msis);
+
+  return (
+    <div className="card-list-item" onClick={onClick}>
+      <div className={`cc-header ${colorInfo.cls}`}>
+        <div className="cc-name">{card.name||'Sin nombre'}</div>
+        <div className="cc-chips">
+          <span className="cc-chip">{expenses.length} gastos</span>
+          {msis.length>0 && <span className="cc-chip">{msis.length} MSI</span>}
+        </div>
+        <div className="cc-amount">{fmt(totalToPay)}</div>
+        <div className="cc-amount-label">Total a Pagar</div>
+      </div>
+      <div className="cc-body">
+        <div className="cc-row">
+          <div className="cc-stat">
+            <span className="cc-stat-val">{fmt(realAvail)}</span>
+            <span className="cc-stat-lbl">Disponible</span>
+          </div>
+          <div className="cc-stat" style={{alignItems:'flex-end'}}>
+            <span className="cc-stat-val">{fmt((parseFloat(card.total)||0)+(parseFloat(card.extension)||0))}</span>
+            <span className="cc-stat-lbl">Crédito Total</span>
+          </div>
+        </div>
+        <div className="bar-wrap">
+          <ProgressBar pct={usedPct}/>
+          <div className="bar-labels"><span>{Math.round(usedPct)}% utilizado</span></div>
+        </div>
+        {/* Pie: ciclo + días, compacto y calmado */}
+        <div style={{
+          display:'flex', alignItems:'flex-end', justifyContent:'space-between',
+          marginTop:12, paddingTop:11, borderTop:'1px solid var(--sep)',
+        }}>
+          <div style={{display:'flex', gap:18}}>
+            {cardMonths.map((m,i)=>(
+              <div key={i}>
+                <div style={{fontSize:15,fontWeight:600,letterSpacing:-.2,color:m.amount>0?'var(--text)':'var(--text3)'}}>{fmt(m.amount)}</div>
+                <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>{m.label}{m.year!==currentYear?` '${String(m.year).slice(2)}`:''}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex', gap:16, textAlign:'right'}}>
+            <div>
+              <div style={{fontSize:15,fontWeight:600,letterSpacing:-.2,color:cutDays<=5?'var(--red)':cutDays<=10?'var(--orange)':'var(--text)'}}>
+                {cutDays}<span style={{fontSize:11,fontWeight:500,color:'var(--text3)'}}>d</span>
+              </div>
+              <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>Corte</div>
+            </div>
+            <div>
+              <div style={{fontSize:15,fontWeight:600,letterSpacing:-.2,color:payDays<=3?'var(--red)':payDays<=7?'var(--orange)':'var(--text)'}}>
+                {payDays}<span style={{fontSize:11,fontWeight:500,color:'var(--text3)'}}>d</span>
+              </div>
+              <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>Pago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DETAIL: EXPENSES TAB ────────────────────────────────────────────────────
+function fmtDateLabel(dateStr) {
+  if (!dateStr) return '';
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m-1, d);
+  const now = new Date();
+  const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((todayMid - new Date(y,m-1,d)) / 86400000);
+  if (diff === 0) return 'Hoy';
+  if (diff === 1) return 'Ayer';
+  return date.toLocaleDateString('es-MX',{day:'numeric',month:'short',year: y!==now.getFullYear()?'numeric':undefined}).toUpperCase();
+}
+
+function ExpensesTab({ expenses, cutDay, onToggle, onEdit }) {
+  const thisCycleExp = expenses.filter(e => !isNextCycle(e.date, cutDay));
+  const nextCycleExp = expenses.filter(e =>  isNextCycle(e.date, cutDay));
+
+  const pendThis = thisCycleExp.filter(e=>!e.paid).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+  const pendNext = nextCycleExp.filter(e=>!e.paid).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+  const paidAmt  = expenses.filter(e=>e.paid).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+
+  // Group ALL expenses by date, newest first
+  const sorted = [...expenses].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const groups = [];
+  sorted.forEach(exp => {
+    const d = exp.date||'';
+    const last = groups[groups.length-1];
+    if (last && last.date===d) last.items.push(exp);
+    else groups.push({ date:d, items:[exp] });
+  });
+
+  return (
+    <>
+      {/* ── Summary ── */}
+      <div style={{margin:'2px 16px 10px',background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',padding:'12px 16px',display:'flex',alignItems:'center'}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:17,fontWeight:600,letterSpacing:-.3,color:pendThis>0?'var(--red)':'var(--text)'}}>{fmt(pendThis)}</div>
+          <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Este ciclo</div>
+        </div>
+        {pendNext > 0 && (
+          <>
+            <div style={{width:1,alignSelf:'stretch',background:'var(--sep)'}}/>
+            <div style={{flex:1,paddingLeft:14}}>
+              <div style={{fontSize:17,fontWeight:600,letterSpacing:-.3,color:'var(--blue)'}}>{fmt(pendNext)}</div>
+              <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Sig. ciclo</div>
+            </div>
+          </>
+        )}
+        <div style={{width:1,alignSelf:'stretch',background:'var(--sep)'}}/>
+        <div style={{flex:1,paddingLeft:14}}>
+          <div style={{fontSize:17,fontWeight:600,letterSpacing:-.3,color:'var(--green)'}}>{fmt(paidAmt)}</div>
+          <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Pagado</div>
+        </div>
+      </div>
+      <div style={{fontSize:11,color:'var(--text3)',margin:'-2px 18px 8px'}}>Solo gastos. El total con MSI está arriba en “A pagar por mes”.</div>
+
+      {/* ── Grouped list ── */}
+      {expenses.length === 0
+        ? <div className="empty"><div className="icon">🧾</div><p>Sin gastos. Toca + Gasto para agregar.</p></div>
+        : groups.map(group => {
+          const groupIsNext = isNextCycle(group.date, cutDay);
+          return (
+            <div key={group.date} style={{marginBottom:4}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,padding:'8px 20px 5px'}}>
+                <span style={{fontSize:12,fontWeight:600,color:'var(--text3)',letterSpacing:.3,textTransform:'uppercase'}}>
+                  {fmtDateLabel(group.date)}
+                </span>
+                {groupIsNext && (
+                  <span style={{fontSize:10,fontWeight:700,color:'var(--blue)',background:'rgba(0,122,255,.1)',padding:'1px 7px',borderRadius:20}}>
+                    Sig. ciclo
+                  </span>
+                )}
+              </div>
+              <div className="list-wrap" style={{margin:'0 16px'}}>
+                {group.items.map((exp,idx) => (
+                  <div key={exp.id} className="expense-item-sm"
+                    style={{borderBottom: idx<group.items.length-1?'1px solid var(--sep)':'none'}}
+                    onClick={()=>onEdit(exp)}>
+                    <div className="expense-icon-sm">{exp.cat.split(' ')[0]}</div>
+                    <div className="expense-info-sm">
+                      <div className="expense-desc-sm">{exp.desc}</div>
+                      <div className="expense-meta-sm">
+                        {exp.cat.split(' ').slice(1).join(' ')}
+                        {exp.note ? <> · <em>{exp.note}</em></> : null}
+                      </div>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+                      <span className={`expense-amt-sm ${exp.paid?'paid':''}`}>{fmt(exp.amount)}</span>
+                      <CheckBtn checked={exp.paid} onToggle={()=>onToggle(exp.id)}/>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })
+      }
+    </>
+  );
+}
+
+// ─── DETAIL: MSI TAB ─────────────────────────────────────────────────────────
+function MsiTab({ msis, onTogglePaid, onEdit }) {
+  if (!msis.length) return (
+    <div className="empty"><div className="icon">📅</div><p>Sin MSI. Toca + para agregar.</p></div>
+  );
+  return (
+    <div className="list-wrap">
+      {msis.map(item => {
+        const total     = parseInt(item.total)||0;
+        const monthly   = parseFloat(item.monthly)||0;
+        const paidKeys  = item.paid||[];
+        const paidCount = parseInt(item.paidCount)||0; // pre-existing cuotas
+        const pct       = total>0?(paidKeys.length/total)*100:0;
+        const remaining = total - paidKeys.length;
+        const months    = Array.from({length:total},(_,i)=>{
+          const mi = (parseInt(item.startMonth)+i)%12;
+          const yi = parseInt(item.startYear)+Math.floor((parseInt(item.startMonth)+i)/12);
+          return { num: i+1, key: monthKey(yi,mi), isPre: i < paidCount };
+        });
+        return (
+          <div key={item.id} className="msi-item">
+            {/* Title row */}
+            <div className="msi-top">
+              <span className="msi-desc">{item.desc}</span>
+              <span className="msi-total" style={{color: remaining===0?'var(--green)':'var(--blue)'}}>
+                {remaining===0 ? '✓ Pagado' : fmt(remaining*monthly)}
+              </span>
+            </div>
+
+            {/* iOS-style subtitle */}
+            <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+              <span style={{
+                fontSize:12,fontWeight:600,color:'var(--text2)',
+                background:'var(--bg)',borderRadius:6,padding:'2px 8px',
+              }}>
+                {paidKeys.length===total
+                  ? `${total} de ${total} cuotas`
+                  : `Pago ${paidKeys.length+1} de ${total}`}
+              </span>
+              <span style={{fontSize:12,color:'var(--text2)'}}>·</span>
+              <span style={{fontSize:12,color:'var(--text2)'}}>{fmt(monthly)}/mes</span>
+            </div>
+
+            <ProgressBar pct={pct}/>
+
+            {/* Cuota dots */}
+            <div className="msi-dots" style={{marginTop:10}}>
+              {months.map((m)=>{
+                const isPaid = paidKeys.includes(m.key);
+                const isNew  = isPaid && !m.isPre; // newly ticked by user
+                return (
+                  <button key={m.num}
+                    className={`msi-dot ${isPaid?'paid':''} ${m.isPre&&isPaid?'pre-paid':''}`}
+                    onClick={()=>onTogglePaid(item.id,m.key)}
+                    title={`Cuota ${m.num}`}>
+                    {isPaid ? (m.isPre ? '●' : '✓') : m.num}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Pending info */}
+            {remaining > 0 && (
+              <div style={{fontSize:12,color:'var(--text2)',marginTop:8}}>
+                Quedan <strong style={{color:'var(--text)'}}>{remaining} cuotas</strong> · {fmt(remaining*monthly)} pendiente
+              </div>
+            )}
+
+            <div style={{textAlign:'right',marginTop:6}}>
+              <button className="item-edit-btn" onClick={()=>onEdit(item)}>editar</button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── DETAIL: CATEGORIES TAB ──────────────────────────────────────────────────
+function CategoriesTab({ expenses }) {
+  const data = useMemo(()=>{
+    const map = {};
+    expenses.forEach(e=>{
+      const k = e.cat; const a = parseFloat(e.amount)||0;
+      map[k] = (map[k]||0) + a;
+    });
+    return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  }, [expenses]);
+  const max = data.length ? data[0][1] : 1;
+  if (!data.length) return <div className="empty"><div className="icon">📊</div><p>Sin datos de categorías</p></div>;
+  return (
+    <div className="list-wrap">
+      {data.map(([cat,amt])=>(
+        <div key={cat} className="cat-row">
+          <div className="cat-emoji">{cat.split(' ')[0]}</div>
+          <div className="cat-info">
+            <div className="cat-name">{cat.split(' ').slice(1).join(' ')}</div>
+            <div className="cat-bar-wrap">
+              <ProgressBar pct={(amt/max)*100} color="var(--blue)"/>
+            </div>
+          </div>
+          <div className="cat-amount">{fmt(amt)}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── DETAIL: PAYMENTS TAB ────────────────────────────────────────────────────
+function PaymentsTab({ payments, onEdit }) {
+  if (!payments.length) return (
+    <div className="empty"><div className="icon">💸</div><p>Sin pagos. Toca + Pago para registrar un abono a la tarjeta.</p></div>
+  );
+  const total  = payments.reduce((a,p)=>a+(parseFloat(p.amount)||0),0);
+  const sorted = [...payments].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  return (
+    <>
+      <div style={{margin:'2px 16px 10px',background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',padding:'12px 16px'}}>
+        <div style={{fontSize:17,fontWeight:600,letterSpacing:-.3,color:'var(--green)'}}>{fmt(total)}</div>
+        <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Total abonado</div>
+      </div>
+      <div className="list-wrap" style={{margin:'0 16px'}}>
+        {sorted.map((p,idx)=>(
+          <div key={p.id} className="expense-item-sm"
+            style={{borderBottom: idx<sorted.length-1?'1px solid var(--sep)':'none'}}
+            onClick={()=>onEdit(p)}>
+            <div className="expense-icon-sm" style={{background:'rgba(52,199,89,.12)'}}>💸</div>
+            <div className="expense-info-sm">
+              <div className="expense-desc-sm">Pago{p.note?` · ${p.note}`:''}</div>
+              <div className="expense-meta-sm">{fmtDateLabel(p.date)}</div>
+            </div>
+            <span className="expense-amt-sm" style={{color:'var(--green)'}}>+{fmt(p.amount)}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ─── CARD DETAIL SCREEN ──────────────────────────────────────────────────────
+function CardDetail({ card, expenses, msis, payments, onBack, onEditCard,
+    onToggleExpense, onEditExpense, onAddExpense,
+    onToggleMsiPaid, onEditMsi, onAddMsi,
+    onEditPayment, onAddPayment }) {
+  const [activeTab, setActiveTab] = useState('gastos');
+  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[2];
+  const { realAvail, usedPct, totalToPay, cutDays, payDays, totalCredit, extension, thisCycle } = computeCardTotals(card, expenses, msis, payments);
+  // A pagar por mes (este mes + próximos 2), gastos + MSI
+  const nextMonths = cardMonthsToPay(card, expenses, msis);
+  const detailMonths = [
+    { label:'Este mes', amount: thisCycle, current:true },
+    ...nextMonths.map(m=>({ label:m.label, amount:m.amount, current:false })),
+  ];
+
+  const handleAdd = () => {
+    if (activeTab === 'gastos') onAddExpense(card.id);
+    else if (activeTab === 'msi') onAddMsi(card.id);
+    else if (activeTab === 'pagos') onAddPayment(card.id);
+  };
+
+  return (
+    <div className="screen-view slide-in" style={{paddingBottom:'calc(var(--nav-h) + var(--safe-bottom) + 32px)'}}>
+
+      {/* Header nav */}
+      <div className="detail-header">
+        <button className="back-btn" onClick={onBack}><IconChevronLeft/>Tarjetas</button>
+        <div style={{flex:1}}/>
+        <button style={{background:'none',border:'none',color:'var(--blue)',fontSize:14,fontWeight:600,cursor:'pointer'}} onClick={()=>onEditCard(card)}>Editar</button>
+      </div>
+
+      {/* Card gradient banner */}
+      <div style={{margin:'0 16px 10px'}}>
+        <div className={`cc-header ${colorInfo.cls}`} style={{borderRadius:'var(--radius)'}}>
+          <div className="cc-name">{card.name||'Sin nombre'}</div>
+          <div className="cc-chips">
+            <span className="cc-chip">{expenses.length} gastos</span>
+            {msis.length>0&&<span className="cc-chip">{msis.length} MSI</span>}
+          </div>
+          <div className="cc-amount">{fmt(totalToPay)}</div>
+          <div className="cc-amount-label">Total a Pagar</div>
+        </div>
+      </div>
+
+      {/* Stats card */}
+      <div style={{background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',margin:'0 16px 10px',padding:'14px 16px'}}>
+        <div className="cc-row">
+          <div className="cc-stat">
+            <span className="cc-stat-val">{fmt(realAvail)}</span>
+            <span className="cc-stat-lbl">Disponible</span>
+          </div>
+          <div className="cc-stat" style={{alignItems:'flex-end'}}>
+            <span className="cc-stat-val">{fmt(totalCredit+extension)}</span>
+            <span className="cc-stat-lbl">Crédito Total</span>
+          </div>
+        </div>
+        <div className="bar-wrap">
+          <ProgressBar pct={usedPct}/>
+          <div className="bar-labels"><span>{Math.round(usedPct)}% utilizado</span></div>
+        </div>
+        <div style={{display:'flex',gap:28,marginTop:12,paddingTop:11,borderTop:'1px solid var(--sep)'}}>
+          <div>
+            <div style={{fontSize:15,fontWeight:600,letterSpacing:-.2,color:cutDays<=5?'var(--red)':cutDays<=10?'var(--orange)':'var(--text)'}}>
+              {cutDays}<span style={{fontSize:11,fontWeight:500,color:'var(--text3)'}}>d</span>
+            </div>
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>Días para el corte</div>
+          </div>
+          <div>
+            <div style={{fontSize:15,fontWeight:600,letterSpacing:-.2,color:payDays<=3?'var(--red)':payDays<=7?'var(--orange)':'var(--text)'}}>
+              {payDays}<span style={{fontSize:11,fontWeight:500,color:'var(--text3)'}}>d</span>
+            </div>
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>Días para el pago</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── A pagar por mes (gastos + MSI) ── */}
+      <div style={{background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',margin:'0 16px 10px',padding:'14px 16px 8px'}}>
+        <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:2}}>
+          A pagar por mes <span style={{fontWeight:500,textTransform:'none',letterSpacing:0}}>· gastos + MSI</span>
+        </div>
+        {detailMonths.map((m,i)=>(
+          <div key={i} style={{
+            display:'flex',justifyContent:'space-between',alignItems:'center',
+            padding:'9px 0',
+            borderTop: i>0 ? '1px solid var(--sep)' : 'none',
+          }}>
+            <span style={{fontSize:15,fontWeight:m.current?700:500,color:'var(--text)'}}>{m.label}</span>
+            <span style={{fontSize:16,fontWeight:m.current?700:600,letterSpacing:-.3,color: m.current ? 'var(--blue)' : (m.amount>0?'var(--text)':'var(--text3)')}}>
+              {fmt(m.amount)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Tabs + inline add button ── */}
+      <div style={{
+        background:'var(--card)',
+        borderBottom:'1px solid var(--sep)',
+        display:'flex', alignItems:'center',
+        padding:'0 4px',
+        position:'sticky', top:0, zIndex:10,
+        boxShadow:'0 1px 0 var(--sep)',
+      }}>
+        {['gastos','msi','pagos','categorias'].map(t=>(
+          <button key={t} onClick={()=>setActiveTab(t)} style={{
+            flex:1, padding:'13px 0', border:'none', background:'none', cursor:'pointer',
+            fontSize:14, fontWeight: activeTab===t ? 700 : 500,
+            color: activeTab===t ? 'var(--text)' : 'var(--text2)',
+            borderBottom: activeTab===t ? '2px solid var(--blue)' : '2px solid transparent',
+            transition:'all .15s', marginBottom:-1,
+          }}>
+            {t==='gastos'?'Gastos':t==='msi'?'MSI':t==='pagos'?'Pagos':'Cat.'}
+          </button>
+        ))}
+        {activeTab !== 'categorias' && (
+          <button onClick={handleAdd} style={{
+            background:'var(--blue)', color:'#fff', border:'none',
+            borderRadius:10, padding:'7px 14px', margin:'0 8px',
+            fontSize:13, fontWeight:700, cursor:'pointer', flexShrink:0,
+            display:'flex', alignItems:'center', gap:5,
+            boxShadow:'0 2px 8px rgba(0,122,255,.3)',
+          }}>
+            <span style={{fontSize:17,lineHeight:1,marginTop:-1}}>+</span>
+            {activeTab==='gastos'?'Gasto':activeTab==='msi'?'MSI':'Pago'}
+          </button>
+        )}
+      </div>
+
+      {/* Tab Content */}
+      <div style={{marginTop:8}}>
+        {activeTab==='gastos'     && <ExpensesTab expenses={expenses} cutDay={card.cutDay} onToggle={onToggleExpense} onEdit={exp=>onEditExpense(exp,card.id)}/>}
+        {activeTab==='msi'        && <MsiTab msis={msis} onTogglePaid={onToggleMsiPaid} onEdit={item=>onEditMsi(item,card.id)}/>}
+        {activeTab==='pagos'      && <PaymentsTab payments={payments} onEdit={p=>onEditPayment(p,card.id)}/>}
+        {activeTab==='categorias' && <CategoriesTab expenses={expenses}/>}
+      </div>
+    </div>
+  );
+}
+
+// ─── FORMS ───────────────────────────────────────────────────────────────────
+function CardForm({ initial, onSave, onDelete, onClose }) {
+  const toStr = v => (v===0||v==='0') ? '' : (v||'');
+  const blank = { name:'', total:'', extension:'', available:'', cutDay:'', payDay:'', color:'blue' };
+  const [f, setF] = useState(initial
+    ? {...initial, total:toStr(initial.total), extension:toStr(initial.extension),
+        available:toStr(initial.available), cutDay:toStr(initial.cutDay), payDay:toStr(initial.payDay)}
+    : blank);
+  const set = k => e => setF(p=>({...p,[k]:e.target.value}));
+  return (
+    <Sheet title={initial?'Editar Tarjeta':'Nueva Tarjeta'} onClose={onClose}>
+      <div className="sheet-body">
+        <div className="field"><label>Nombre</label><input value={f.name} onChange={set('name')} placeholder="ej. HSBC Platinum"/></div>
+        <div className="field-row">
+          <div className="field"><label>Crédito Total</label><input type="number" value={f.total} onChange={set('total')} placeholder="0" inputMode="decimal"/></div>
+          <div className="field"><label>Extensión</label><input type="number" value={f.extension} onChange={set('extension')} placeholder="0" inputMode="decimal"/></div>
+        </div>
+        <div className="field"><label>Disponible Actual</label><input type="number" value={f.available} onChange={set('available')} placeholder="0" inputMode="decimal"/></div>
+        <div className="field-row">
+          <div className="field"><label>Día de Corte</label><input type="number" min="1" max="31" value={f.cutDay} onChange={set('cutDay')} placeholder="1" inputMode="numeric"/></div>
+          <div className="field"><label>Día de Pago</label><input type="number" min="1" max="31" value={f.payDay} onChange={set('payDay')} placeholder="15" inputMode="numeric"/></div>
+        </div>
+        <div className="field"><label>Color</label><ColorPicker value={f.color} onChange={v=>setF(p=>({...p,color:v}))}/></div>
+      </div>
+      <div className="sheet-actions">
+        {initial && <button className="btn-danger" onClick={()=>onDelete(initial.id)}>Eliminar</button>}
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={()=>{if(f.name){onSave(f);onClose();}}}>Guardar</button>
+      </div>
+    </Sheet>
+  );
+}
+
+function ExpenseForm({ initial, cutDay, onSave, onDelete, onClose }) {
+  const blank = {
+    desc:'', amount:'', cat:CATS[12], date:today.toISOString().slice(0,10),
+    note:'', paid:false, alreadyDiscounted:false
+  };
+  const [f, setF] = useState(initial
+    ? {...initial, amount: initial.amount===0?'':initial.amount}
+    : {...blank});
+  const set = k => e => setF(p=>({...p,[k]:e.target.value}));
+  const isNext = isNextCycle(f.date, cutDay);
+
+  return (
+    <Sheet title={initial?'Editar Gasto':'Nuevo Gasto'} onClose={onClose}>
+      <div className="sheet-body">
+        <div className="field"><label>Descripción</label><input value={f.desc} onChange={set('desc')} placeholder="ej. Amazon, Netflix…"/></div>
+        <div className="field"><label>Monto</label><input type="number" value={f.amount} onChange={set('amount')} placeholder="0.00" inputMode="decimal"/></div>
+        <div className="field"><label>Categoría</label>
+          <select value={f.cat} onChange={set('cat')}>
+            {CATS.map(c=><option key={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label>Fecha</label>
+          <input type="date" value={f.date} onChange={set('date')}/>
+          {isNext && (
+            <div style={{
+              marginTop:8, padding:'8px 12px', borderRadius:8,
+              background:'rgba(0,122,255,.08)', color:'var(--blue)',
+              fontSize:12, fontWeight:600, display:'flex', alignItems:'center', gap:6,
+            }}>
+              ⚡ Compra después del corte (día {cutDay}) — va al siguiente estado de cuenta
+            </div>
+          )}
+        </div>
+        <div className="field"><label>Nota</label><textarea value={f.note} onChange={set('note')} placeholder="Notas opcionales…"/></div>
+
+        {/* TOGGLE */}
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:600,color:'var(--text2)',textTransform:'uppercase',letterSpacing:.4,marginBottom:6}}>
+            ¿Ya está descontado de tu saldo disponible?
+          </div>
+          <Toggle
+            on={f.alreadyDiscounted}
+            onToggle={()=>setF(p=>({...p,alreadyDiscounted:!p.alreadyDiscounted}))}
+            label={f.alreadyDiscounted ? 'Sí, el banco ya lo descontó' : 'No, réstalo de mi disponible'}
+            sub={f.alreadyDiscounted
+              ? 'Actívalo si el banco ya lo restó de tu crédito disponible y no quieres contarlo dos veces'
+              : 'Actívalo si el banco ya lo restó de tu crédito disponible y no quieres contarlo dos veces'}
+          />
+        </div>
+      </div>
+      <div className="sheet-actions">
+        {initial && <button className="btn-danger" onClick={()=>{onDelete(initial.id);onClose();}}>Eliminar</button>}
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={()=>{if(f.desc){onSave(f);onClose();}}}>Agregar</button>
+      </div>
+    </Sheet>
+  );
+}
+
+function MsiForm({ initial, onSave, onDelete, onClose }) {
+  const blank = {
+    desc:'', monthly:'', total:'', startMonth:currentMonth, startYear:currentYear,
+    paid:[], paidCount:''
+  };
+  const [f, setF] = useState(initial
+    ? { ...initial,
+        monthly: initial.monthly===0?'':initial.monthly,
+        total:   initial.total===0?'':initial.total,
+        paidCount: '' }
+    : blank);
+  const set = k => e => setF(p=>({...p,[k]:e.target.value}));
+
+  const totalNum  = parseInt(f.total)||0;
+  const paidNum   = Math.min(parseInt(f.paidCount)||0, totalNum);
+  const isEditing = !!initial;
+
+  return (
+    <Sheet title={initial?'Editar MSI':'Nuevo MSI / Diferido'} onClose={onClose}>
+      <div className="sheet-body">
+        <div className="field"><label>Descripción</label>
+          <input value={f.desc} onChange={set('desc')} placeholder="ej. MacBook 12 MSI"/>
+        </div>
+        <div className="field-row">
+          <div className="field"><label>Cuota Mensual ($)</label>
+            <input type="number" value={f.monthly} onChange={set('monthly')} placeholder="0.00" inputMode="decimal"/>
+          </div>
+          <div className="field"><label>Núm. de Cuotas</label>
+            <input type="number" min="1" max="60" value={f.total} onChange={set('total')} placeholder="12" inputMode="numeric"/>
+          </div>
+        </div>
+        <div className="field-row">
+          <div className="field"><label>Mes Inicio</label>
+            <select value={f.startMonth} onChange={set('startMonth')}>
+              {MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}
+            </select>
+          </div>
+          <div className="field"><label>Año</label>
+            <input type="number" min="2020" max="2035" value={f.startYear} onChange={set('startYear')}/>
+          </div>
+        </div>
+
+        {/* Only show paidCount when creating new */}
+        {!isEditing && (
+          <div className="field">
+            <label>¿Cuántas cuotas ya pagaste?</label>
+            <input type="number" min="0" max={totalNum||60} value={f.paidCount}
+              onChange={set('paidCount')} placeholder="0 si empiezas desde cero"
+              inputMode="numeric"/>
+            {paidNum > 0 && totalNum > 0 && (
+              <div style={{fontSize:12,color:'var(--blue)',marginTop:5,padding:'6px 0'}}>
+                Las cuotas 1–{paidNum} se marcarán como pagadas automáticamente
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Info note — no toggle needed, bank always reflects MSI fully */}
+        <div style={{
+          background:'rgba(0,122,255,.06)', borderRadius:'var(--radius-sm)',
+          padding:'10px 14px', marginBottom:14,
+          fontSize:13, color:'var(--text2)', lineHeight:1.4,
+        }}>
+          💡 El banco ya descontó el crédito completo del MSI. Cada cuota que palomees como pagada libera ese crédito en tu disponible.
+        </div>
+      </div>
+      <div className="sheet-actions">
+        {initial && <button className="btn-danger" onClick={()=>{onDelete(initial.id);onClose();}}>Eliminar</button>}
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={()=>{
+          if (!f.desc || !f.monthly) return;
+          let prePaid = initial ? initial.paid : [];
+          if (!isEditing && paidNum > 0) {
+            prePaid = Array.from({length:paidNum},(_,i)=>{
+              const mi=(parseInt(f.startMonth)+i)%12;
+              const yi=parseInt(f.startYear)+Math.floor((parseInt(f.startMonth)+i)/12);
+              return monthKey(yi,mi);
+            });
+          }
+          onSave({...f, paid: prePaid, paidCount: paidNum});
+          onClose();
+        }}>Guardar</button>
+      </div>
+    </Sheet>
+  );
+}
+
+function CommitForm({ initial, onSave, onDelete, onClose }) {
+  const blank = { desc:'', amount:'', cat:CATS[8], month:currentMonth, year:currentYear, repeat:1, paidMonths:[] };
+  const [f, setF] = useState(initial ? {...initial, amount: initial.amount===0?'':initial.amount} : blank);
+  const set = k => e => setF(p=>({...p,[k]:e.target.value}));
+  return (
+    <Sheet title={initial?'Editar Compromiso':'Nuevo Compromiso'} onClose={onClose}>
+      <div className="sheet-body">
+        <div className="field"><label>Descripción</label><input value={f.desc} onChange={set('desc')} placeholder="ej. Netflix, Renta…"/></div>
+        <div className="field"><label>Monto</label><input type="number" value={f.amount} onChange={set('amount')} placeholder="0.00" inputMode="decimal"/></div>
+        <div className="field"><label>Categoría</label>
+          <select value={f.cat} onChange={set('cat')}>{CATS.map(c=><option key={c}>{c}</option>)}</select>
+        </div>
+        <div className="field-row">
+          <div className="field"><label>Mes Inicio</label>
+            <select value={f.month} onChange={set('month')}>
+              {MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}
+            </select>
+          </div>
+          <div className="field"><label>Año</label><input type="number" min="2020" max="2035" value={f.year} onChange={set('year')}/></div>
+        </div>
+        <div className="field"><label>Repetir (meses)</label><input type="number" min="1" max="120" value={f.repeat} onChange={set('repeat')}/></div>
+      </div>
+      <div className="sheet-actions">
+        {initial && <button className="btn-danger" onClick={()=>{onDelete(initial.id);onClose();}}>Eliminar</button>}
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={()=>{if(f.desc){onSave(f);onClose();}}}>Guardar</button>
+      </div>
+    </Sheet>
+  );
+}
+
+// ─── PAYMENT FORM ─────────────────────────────────────────────────────────────
+function PaymentForm({ initial, onSave, onDelete, onClose }) {
+  const blank = { amount:'', date:today.toISOString().slice(0,10), note:'' };
+  const [f, setF] = useState(initial
+    ? {...initial, amount: initial.amount===0?'':initial.amount}
+    : {...blank});
+  const set = k => e => setF(p=>({...p,[k]:e.target.value}));
+  return (
+    <Sheet title={initial?'Editar Pago':'Registrar Pago'} onClose={onClose}>
+      <div className="sheet-body">
+        <div style={{
+          background:'rgba(52,199,89,.08)', borderRadius:'var(--radius-sm)',
+          padding:'10px 14px', marginBottom:14,
+          fontSize:13, color:'var(--text2)', lineHeight:1.4,
+        }}>
+          💸 Registra el dinero que transferiste a la tarjeta. Se resta de tu <strong>total a pagar</strong> y se suma a tu <strong>crédito disponible</strong>.
+        </div>
+        <div className="field"><label>Monto del pago</label>
+          <input type="number" value={f.amount} onChange={set('amount')} placeholder="0.00" inputMode="decimal"/>
+        </div>
+        <div className="field"><label>Fecha</label>
+          <input type="date" value={f.date} onChange={set('date')}/>
+        </div>
+        <div className="field"><label>Nota</label>
+          <textarea value={f.note} onChange={set('note')} placeholder="ej. Abono parcial, pago de la semana…"/>
+        </div>
+      </div>
+      <div className="sheet-actions">
+        {initial && <button className="btn-danger" onClick={()=>{onDelete(initial.id);onClose();}}>Eliminar</button>}
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={()=>{if(parseFloat(f.amount)>0){onSave(f);onClose();}}}>Guardar</button>
+      </div>
+    </Sheet>
+  );
+}
+
+// ─── HOME SUMMARY (todas las tarjetas) ────────────────────────────────────────
+function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming }) {
+  return (
+    <div style={{
+      margin:'2px 16px 18px',
+      borderRadius:'var(--radius)',
+      background:'var(--card)',
+      boxShadow:'var(--shadow)',
+      padding:'16px 18px 14px',
+      animation:'fadeUp .3s ease both',
+    }}>
+      <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6}}>Total a pagar</div>
+      <div style={{fontSize:33,fontWeight:700,letterSpacing:-1,marginTop:3}}>{fmt(grandTotal)}</div>
+      <div style={{fontSize:12,color:'var(--text2)',marginTop:1}}>Todas las tarjetas</div>
+      <div style={{display:'flex',gap:28,marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
+        <div>
+          <div style={{fontSize:19,fontWeight:600,letterSpacing:-.3}}>{fmt(thisMonth)}</div>
+          <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Este mes</div>
+        </div>
+        <div>
+          <div style={{fontSize:19,fontWeight:600,letterSpacing:-.3,color:'var(--blue)'}}>{fmt(weekly)}</div>
+          <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Por semana</div>
+        </div>
+      </div>
+
+      {/* Próximos pagos (15 días) */}
+      <div style={{marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
+        <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:upcoming&&upcoming.length?6:4}}>Próximos pagos · 15 días</div>
+        {upcoming && upcoming.length>0
+          ? upcoming.map((p,i)=>(
+              <div key={p.id} style={{
+                display:'flex',alignItems:'center',gap:10,
+                padding:'8px 0',
+                borderTop: i>0 ? '1px solid var(--sep)' : 'none',
+              }}>
+                <span style={{width:9,height:9,borderRadius:'50%',background:p.hex,flexShrink:0}}/>
+                <span style={{fontSize:14,fontWeight:600,color:'var(--text)',flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.name}</span>
+                <span style={{fontSize:15,fontWeight:600,letterSpacing:-.2}}>{fmt(p.amount)}</span>
+                <span style={{fontSize:12,color:p.days<=3?'var(--red)':p.days<=7?'var(--orange)':'var(--text3)',minWidth:54,textAlign:'right'}}>
+                  {p.date.getDate()} {MONTHS[p.date.getMonth()]}
+                </span>
+              </div>
+            ))
+          : <div style={{fontSize:13,color:'var(--text3)',padding:'2px 0 4px'}}>Sin pagos en los próximos 15 días</div>}
+      </div>
+
+      {months && months.length>0 && (
+        <div style={{marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
+          <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:4}}>A pagar por mes · todas</div>
+          {months.map((m,i)=>(
+            <div key={m.mk} style={{
+              display:'flex',justifyContent:'space-between',alignItems:'center',
+              padding:'8px 0',
+              borderTop: i>0 ? '1px solid var(--sep)' : 'none',
+            }}>
+              <span style={{fontSize:14,color:'var(--text)'}}>
+                {m.label}{m.year!==currentYear ? ` '${String(m.year).slice(2)}` : ''}
+              </span>
+              <span style={{fontSize:15,fontWeight:600,letterSpacing:-.2,color: m.amount>0?'var(--text)':'var(--text3)'}}>
+                {fmt(m.amount)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── COMMITMENTS SCREEN ───────────────────────────────────────────────────────
+function CommitmentsScreen({ commits, onEdit, onTogglePaid, selMonth, setSelMonth }) {
+  const monthTabs = useMemo(()=>{
+    const tabs=[];
+    for(let i=-2;i<=8;i++){
+      const d=new Date(currentYear,currentMonth+i,1);
+      tabs.push({key:monthKey(d.getFullYear(),d.getMonth()),label:`${MONTHS[d.getMonth()]} ${d.getFullYear()}`});
+    }
+    return tabs;
+  },[]);
+
+  const active = commits.filter(c=>{
+    const sm = monthKey(parseInt(c.year),parseInt(c.month));
+    const months = parseInt(c.repeat)||1;
+    const endDate = new Date(parseInt(c.year),parseInt(c.month)+months-1,1);
+    const endMK = monthKey(endDate.getFullYear(),endDate.getMonth());
+    return sm<=selMonth && selMonth<=endMK;
+  });
+
+  const totalPending = active.filter(c=>!((c.paidMonths||[]).includes(selMonth))).reduce((a,c)=>a+(parseFloat(c.amount)||0),0);
+  const totalPaid    = active.filter(c=>(c.paidMonths||[]).includes(selMonth)).reduce((a,c)=>a+(parseFloat(c.amount)||0),0);
+
+  return (
+    <>
+      <div className="month-tabs">
+        {monthTabs.map(t=>(
+          <button key={t.key} className={`month-tab ${selMonth===t.key?'active':''}`} onClick={()=>setSelMonth(t.key)}>{t.label}</button>
+        ))}
+      </div>
+      {active.length===0
+        ? <div className="empty"><div className="icon">📋</div><p>Sin compromisos en este mes</p></div>
+        : (
+          <div style={{background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',margin:'0 16px 12px',overflow:'hidden'}}>
+            {active.map(c=>{
+              const isPaid=(c.paidMonths||[]).includes(selMonth);
+              return (
+                <div key={c.id+selMonth} className="commit-item">
+                  <div className="commit-top">
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="commit-desc" style={{opacity:isPaid?.5:1,textDecoration:isPaid?'line-through':'none'}}>{c.desc}</div>
+                      <div className="commit-meta">{c.cat.split(' ').slice(1).join(' ')} · {parseInt(c.repeat)>1?`${c.repeat} meses`:'Único'}</div>
+                    </div>
+                    <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                      <span className="commit-amount" style={{opacity:isPaid?.5:1}}>{fmt(c.amount)}</span>
+                      <CheckBtn checked={isPaid} onToggle={()=>onTogglePaid(c.id,selMonth)}/>
+                    </div>
+                  </div>
+                  <button className="item-edit-btn" onClick={()=>onEdit(c)}>editar</button>
+                </div>
+              );
+            })}
+            <div className="summary-row"><span>Pagado</span><strong style={{color:'var(--green)'}}>{fmt(totalPaid)}</strong></div>
+            <div className="summary-row" style={{borderTop:'none',paddingTop:0}}><span>Pendiente</span><strong style={{color:'var(--red)'}}>{fmt(totalPending)}</strong></div>
+          </div>
+        )
+      }
+    </>
+  );
+}
+
+// ─── APP ─────────────────────────────────────────────────────────────────────
+function App() {
+  const [tab, setTab]           = useState('cards');
+  const [detailCard, setDetail] = useState(null); // card obj | null
+  const [cards, setCards]       = useStorage('fp_cards', []);
+  const [expenses, setExpenses] = useStorage('fp_expenses', []);
+  const [msis, setMsis]         = useStorage('fp_msis', []);
+  const [payments, setPayments] = useStorage('fp_payments', []);
+  const [commits, setCommits]   = useStorage('fp_commits', []);
+
+  const [cardModal,   setCardModal]   = useState(null);
+  const [expModal,    setExpModal]    = useState(null);
+  const [msiModal,    setMsiModal]    = useState(null);
+  const [payModal,    setPayModal]    = useState(null);
+  const [commitModal, setCommitModal] = useState(null);
+  const [selMonth,    setSelMonth]    = useState(currentMK);
+
+  // ── Card CRUD ──
+  const saveCard = c => {
+    if (c.id) setCards(p=>p.map(x=>x.id===c.id?{...c}:x));
+    else setCards(p=>[...p,{...c,id:uid()}]);
+  };
+  const deleteCard = id => {
+    setCards(p=>p.filter(x=>x.id!==id));
+    setExpenses(p=>p.filter(x=>x.cardId!==id));
+    setMsis(p=>p.filter(x=>x.cardId!==id));
+    setPayments(p=>p.filter(x=>x.cardId!==id));
+    setCardModal(null);
+    setDetail(null);
+  };
+
+  // ── Expense CRUD ── (card.available is NEVER touched — everything is derived)
+  const saveExpense = (f, cardId) => {
+    if (f.id) setExpenses(p=>p.map(x=>x.id===f.id?{...f,cardId}:x));
+    else setExpenses(p=>[...p,{...f,id:uid(),cardId,paid:false}]);
+  };
+  const deleteExpense = id => setExpenses(p=>p.filter(x=>x.id!==id));
+  const toggleExpense = id => setExpenses(p=>p.map(x=>x.id===id?{...x,paid:!x.paid}:x));
+
+  // ── MSI CRUD ── (card.available is NEVER touched — everything is derived)
+  const saveMsi = (f, cardId) => {
+    if (f.id) setMsis(p=>p.map(x=>x.id===f.id?{...f,cardId}:x));
+    else setMsis(p=>[...p,{...f,id:uid(),cardId}]);
+  };
+  const deleteMsi = id => setMsis(p=>p.filter(x=>x.id!==id));
+  const toggleMsiPaid = (id, mk) => {
+    setMsis(p=>p.map(x=>{
+      if(x.id!==id) return x;
+      const paid=[...(x.paid||[])];
+      const nowPaid = !paid.includes(mk);
+      return {...x, paid: nowPaid ? [...paid,mk] : paid.filter(k=>k!==mk)};
+    }));
+  };
+
+  // ── Payment CRUD ── (abonos a la tarjeta — suben disponible, bajan deuda)
+  const savePayment = (f, cardId) => {
+    if (f.id) setPayments(p=>p.map(x=>x.id===f.id?{...f,cardId}:x));
+    else setPayments(p=>[...p,{...f,id:uid(),cardId}]);
+  };
+  const deletePayment = id => setPayments(p=>p.filter(x=>x.id!==id));
+
+  // ── Commitments CRUD ──
+  const saveCommit = f => {
+    if(f.id) setCommits(p=>p.map(x=>x.id===f.id?{...f}:x));
+    else setCommits(p=>[...p,{...f,id:uid(),paidMonths:[]}]);
+  };
+  const deleteCommit = id => { setCommits(p=>p.filter(x=>x.id!==id)); setCommitModal(null); };
+  const toggleCommitPaid = (id,mk) => setCommits(p=>p.map(x=>{
+    if(x.id!==id) return x;
+    const pm=x.paidMonths||[];
+    return {...x,paidMonths:pm.includes(mk)?pm.filter(k=>k!==mk):[...pm,mk]};
+  }));
+
+  // ── FAB — only for list screens ──
+  const handleFab = () => {
+    if (tab==='cards') setCardModal('new');
+    else setCommitModal('new');
+  };
+
+  const showDetail = detailCard !== null;
+
+  // ── Totales del inicio (todas las tarjetas) ──
+  const homeTotals = useMemo(()=>{
+    let grandTotal=0, thisMonth=0;
+    cards.forEach(c=>{
+      const t = computeCardTotals(
+        c,
+        expenses.filter(e=>e.cardId===c.id),
+        msis.filter(m=>m.cardId===c.id),
+        payments.filter(p=>p.cardId===c.id)
+      );
+      grandTotal += t.totalToPay;
+      thisMonth  += t.thisCycle;
+    });
+    return { grandTotal, thisMonth, weekly: thisMonth/4 };
+  }, [cards, expenses, msis, payments]);
+
+  // ── A pagar por mes — GENERAL (próximos 2 meses, todas las tarjetas) ──
+  const monthsToPay = useMemo(()=>{
+    // Gastos pendientes del siguiente ciclo → se cobran el mes próximo
+    let expNext = 0;
+    expenses.forEach(e=>{
+      if (e.paid) return;
+      const card = cards.find(c=>c.id===e.cardId);
+      const cut = card ? card.cutDay : 1;
+      if (isNextCycle(e.date, cut)) expNext += parseFloat(e.amount)||0;
+    });
+    const out = [];
+    for (let k=1;k<=2;k++){
+      const d  = new Date(currentYear, currentMonth+k, 1);
+      const mk = monthKey(d.getFullYear(), d.getMonth());
+      let amount = 0;
+      msis.forEach(m=>{
+        const total=parseInt(m.total)||0, monthly=parseFloat(m.monthly)||0, paid=m.paid||[];
+        for (let i=0;i<total;i++){
+          const mi=(parseInt(m.startMonth)+i)%12;
+          const yi=parseInt(m.startYear)+Math.floor((parseInt(m.startMonth)+i)/12);
+          const cuotaMk=monthKey(yi,mi);
+          if (cuotaMk===mk && !paid.includes(cuotaMk)) amount += monthly;
+        }
+      });
+      if (k===1) amount += expNext;
+      out.push({ mk, label: MONTHS[d.getMonth()], year: d.getFullYear(), amount });
+    }
+    return out;
+  }, [cards, expenses, msis, payments]);
+
+  // ── Próximos pagos (tarjetas que vencen dentro de 15 días) ──
+  const upcomingPayments = useMemo(()=>{
+    const list = [];
+    cards.forEach(c=>{
+      const t = computeCardTotals(
+        c,
+        expenses.filter(e=>e.cardId===c.id),
+        msis.filter(m=>m.cardId===c.id),
+        payments.filter(p=>p.cardId===c.id)
+      );
+      const days = daysUntil(parseInt(c.payDay)||15);
+      if (days <= 15 && t.thisCycle > 0) {
+        const dd = parseInt(c.payDay)||15;
+        const date = dd >= today.getDate()
+          ? new Date(currentYear, currentMonth, dd)
+          : new Date(currentYear, currentMonth+1, dd);
+        const ci = COLORS.find(x=>x.id===c.color)||COLORS[2];
+        list.push({ id:c.id, name:c.name||'Sin nombre', hex:ci.hex, amount:t.thisCycle, days, date });
+      }
+    });
+    list.sort((a,b)=>a.days-b.days);
+    return list;
+  }, [cards, expenses, msis, payments]);
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div className="app-stack">
+
+        {/* LIST SCREEN */}
+        <div className={`screen-view ${showDetail ? 'slide-out' : 'slide-in'}`}>
+          {tab==='cards' && (
+            <>
+              <div className="screen-header">
+                <div className="screen-title">Tarjetas 💳</div>
+                <div className="screen-sub">{cards.length===0?'Toca + para agregar tu primera tarjeta':`${cards.length} tarjeta${cards.length>1?'s':''}`}</div>
+              </div>
+              {cards.length===0 && <div className="empty"><div className="icon">💳</div><p>Sin tarjetas aún</p></div>}
+              {cards.length>0 && <HomeSummary {...homeTotals} months={monthsToPay} upcoming={upcomingPayments}/>}
+              {cards.map((card,i)=>(
+                <div key={card.id} style={{animationDelay:`${i*40}ms`}}>
+                  <CardListItem
+                    card={card}
+                    expenses={expenses.filter(e=>e.cardId===card.id)}
+                    msis={msis.filter(m=>m.cardId===card.id)}
+                    payments={payments.filter(p=>p.cardId===card.id)}
+                    onClick={()=>setDetail(card)}
+                    onEdit={c=>setCardModal(c)}
+                  />
+                </div>
+              ))}
+            </>
+          )}
+          {tab==='commits' && (
+            <>
+              <div className="screen-header">
+                <div className="screen-title">Compromisos 📋</div>
+                <div className="screen-sub">Pagos mensuales y únicos</div>
+              </div>
+              <CommitmentsScreen
+                commits={commits}
+                onEdit={c=>setCommitModal(c)}
+                onTogglePaid={toggleCommitPaid}
+                selMonth={selMonth}
+                setSelMonth={setSelMonth}
+              />
+            </>
+          )}
+        </div>
+
+        {/* DETAIL SCREEN */}
+        {detailCard && (
+          <div className={`screen-view ${showDetail ? 'slide-in' : 'slide-right'}`} style={{zIndex:10}}>
+            <CardDetail
+              card={cards.find(c=>c.id===detailCard.id)||detailCard}
+              expenses={expenses.filter(e=>e.cardId===detailCard.id)}
+              msis={msis.filter(m=>m.cardId===detailCard.id)}
+              payments={payments.filter(p=>p.cardId===detailCard.id)}
+              onBack={()=>setDetail(null)}
+              onEditCard={c=>setCardModal(c)}
+              onToggleExpense={toggleExpense}
+              onEditExpense={(exp,cid)=>setExpModal({cardId:cid, cutDay:cards.find(c=>c.id===cid)?.cutDay, exp})}
+              onAddExpense={cid=>setExpModal({cardId:cid, cutDay:cards.find(c=>c.id===cid)?.cutDay})}
+              onToggleMsiPaid={toggleMsiPaid}
+              onEditMsi={(item,cid)=>setMsiModal({cardId:cid,item})}
+              onAddMsi={cid=>setMsiModal({cardId:cid})}
+              onEditPayment={(pay,cid)=>setPayModal({cardId:cid, pay})}
+              onAddPayment={cid=>setPayModal({cardId:cid})}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* BOTTOM NAV */}
+      <nav className="bottom-nav">
+        <button className={`nav-btn ${tab==='cards'?'active':''}`} onClick={()=>{setTab('cards');setDetail(null);}}>
+          <IconCards/><span>Tarjetas</span>
+        </button>
+        <button className={`nav-btn ${tab==='commits'?'active':''}`} onClick={()=>{setTab('commits');setDetail(null);}}>
+          <IconList/><span>Compromisos</span>
+        </button>
+      </nav>
+
+      {/* FAB — only on list views */}
+      {!detailCard && (
+        <button className="fab" onClick={handleFab}><IconPlus/></button>
+      )}
+
+      {/* MODALS */}
+      {(cardModal==='new'||(cardModal&&cardModal.id)) && (
+        <CardForm
+          initial={cardModal==='new'?null:cardModal}
+          onSave={saveCard}
+          onDelete={deleteCard}
+          onClose={()=>setCardModal(null)}
+        />
+      )}
+      {expModal && (
+        <ExpenseForm
+          initial={expModal.exp||null}
+          cutDay={expModal.cutDay||1}
+          onSave={f=>saveExpense(f,expModal.cardId)}
+          onDelete={deleteExpense}
+          onClose={()=>setExpModal(null)}
+        />
+      )}
+      {msiModal && (
+        <MsiForm
+          initial={msiModal.item||null}
+          onSave={f=>saveMsi(f,msiModal.cardId)}
+          onDelete={deleteMsi}
+          onClose={()=>setMsiModal(null)}
+        />
+      )}
+      {payModal && (
+        <PaymentForm
+          initial={payModal.pay||null}
+          onSave={f=>savePayment(f,payModal.cardId)}
+          onDelete={deletePayment}
+          onClose={()=>setPayModal(null)}
+        />
+      )}
+      {commitModal && (
+        <CommitForm
+          initial={commitModal==='new'?null:commitModal}
+          onSave={saveCommit}
+          onDelete={deleteCommit}
+          onClose={()=>setCommitModal(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
