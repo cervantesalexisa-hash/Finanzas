@@ -624,7 +624,7 @@ function cardMonthsToPay(card, expenses, msis) {
 
 function CardListItem({ card, expenses, msis, payments, onClick, onEdit }) {
   const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[2];
-  const { realAvail, usedPct, totalToPay, cutDays, payDays } = computeCardTotals(card, expenses, msis, payments);
+  const { realAvail, usedPct, totalToPay, cutDays, payDays, thisCycle } = computeCardTotals(card, expenses, msis, payments);
   const cardMonths = cardMonthsToPay(card, expenses, msis);
 
   return (
@@ -635,8 +635,16 @@ function CardListItem({ card, expenses, msis, payments, onClick, onEdit }) {
           <span className="cc-chip">{expenses.length} gastos</span>
           {msis.length>0 && <span className="cc-chip">{msis.length} MSI</span>}
         </div>
-        <div className="cc-amount">{fmt(totalToPay)}</div>
-        <div className="cc-amount-label">Total a Pagar</div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginTop:9}}>
+          <div>
+            <div style={{fontSize:30,fontWeight:700,letterSpacing:-1,lineHeight:1.05}}>{fmt(thisCycle)}</div>
+            <div style={{fontSize:11,opacity:.8,marginTop:2}}>A pagar este mes</div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:17,fontWeight:600,opacity:.95,letterSpacing:-.3}}>{fmt(totalToPay)}</div>
+            <div style={{fontSize:10,opacity:.7,marginTop:2}}>Deuda total</div>
+          </div>
+        </div>
       </div>
       <div className="cc-body">
         <div className="cc-row">
@@ -1313,8 +1321,34 @@ function PaymentForm({ initial, onSave, onDelete, onClose }) {
   );
 }
 
+// ─── CASH FORM (dinero disponible) ────────────────────────────────────────────
+function CashForm({ initial, onSave, onClose }) {
+  const [v, setV] = useState(initial && parseFloat(initial)>0 ? String(initial) : '');
+  return (
+    <Sheet title="Dinero disponible" onClose={onClose}>
+      <div className="sheet-body">
+        <div style={{
+          background:'rgba(52,199,89,.08)', borderRadius:'var(--radius-sm)',
+          padding:'10px 14px', marginBottom:14, fontSize:13, color:'var(--text2)', lineHeight:1.4,
+        }}>
+          💵 Pon cuánto dinero tienes ahorita para pagar. La app te dirá si te alcanza para lo de este mes.
+        </div>
+        <div className="field"><label>¿Cuánto dinero tienes?</label>
+          <input type="number" value={v} onChange={e=>setV(e.target.value)} placeholder="0.00" inputMode="decimal"/>
+        </div>
+      </div>
+      <div className="sheet-actions">
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={()=>{onSave(v);onClose();}}>Guardar</button>
+      </div>
+    </Sheet>
+  );
+}
+
 // ─── HOME SUMMARY (todas las tarjetas) ────────────────────────────────────────
-function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming }) {
+function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, onEditCash }) {
+  const cashVal = parseFloat(cash)||0;
+  const diff = cashVal - thisMonth;
   return (
     <div style={{
       margin:'2px 16px 18px',
@@ -1324,16 +1358,31 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming }) {
       padding:'16px 18px 14px',
       animation:'fadeUp .3s ease both',
     }}>
-      <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6}}>Total a pagar</div>
-      <div style={{fontSize:33,fontWeight:700,letterSpacing:-1,marginTop:3}}>{fmt(grandTotal)}</div>
-      <div style={{fontSize:12,color:'var(--text2)',marginTop:1}}>Todas las tarjetas</div>
-      <div style={{display:'flex',gap:28,marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
-        <div>
-          <div style={{fontSize:19,fontWeight:600,letterSpacing:-.3}}>{fmt(thisMonth)}</div>
+      {/* Dinero disponible (lo que tengo para pagar) */}
+      <div onClick={onEditCash} style={{cursor:'pointer'}}>
+        <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6}}>Dinero disponible</div>
+        {cashVal>0
+          ? <>
+              <div style={{fontSize:33,fontWeight:700,letterSpacing:-1,marginTop:3,color:'var(--green)'}}>{fmt(cashVal)}</div>
+              <div style={{fontSize:12,marginTop:1,color: diff>=0?'var(--green)':'var(--red)'}}>
+                {diff>=0 ? `Te alcanza para este mes · sobran ${fmt(diff)}` : `Te faltan ${fmt(-diff)} para este mes`}
+              </div>
+            </>
+          : <div style={{fontSize:15,color:'var(--blue)',marginTop:4}}>Toca para poner cuánto dinero tienes</div>}
+      </div>
+
+      {/* Este mes (lo más importante) · Deuda total · Por semana */}
+      <div style={{display:'flex',gap:18,marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:20,fontWeight:700,letterSpacing:-.4}}>{fmt(thisMonth)}</div>
           <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Este mes</div>
         </div>
-        <div>
-          <div style={{fontSize:19,fontWeight:600,letterSpacing:-.3,color:'var(--blue)'}}>{fmt(weekly)}</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:18,fontWeight:600,letterSpacing:-.3}}>{fmt(grandTotal)}</div>
+          <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Deuda total</div>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:18,fontWeight:600,letterSpacing:-.3,color:'var(--blue)'}}>{fmt(weekly)}</div>
           <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Por semana</div>
         </div>
       </div>
@@ -1451,12 +1500,14 @@ function App() {
   const [msis, setMsis]         = useStorage('fp_msis', []);
   const [payments, setPayments] = useStorage('fp_payments', []);
   const [commits, setCommits]   = useStorage('fp_commits', []);
+  const [cash, setCash]         = useStorage('fp_cash', '');
 
   const [cardModal,   setCardModal]   = useState(null);
   const [expModal,    setExpModal]    = useState(null);
   const [msiModal,    setMsiModal]    = useState(null);
   const [payModal,    setPayModal]    = useState(null);
   const [commitModal, setCommitModal] = useState(null);
+  const [cashModal,   setCashModal]   = useState(false);
   const [selMonth,    setSelMonth]    = useState(currentMK);
 
   // ── Card CRUD ──
@@ -1606,7 +1657,7 @@ function App() {
                 <div className="screen-sub">{cards.length===0?'Toca + para agregar tu primera tarjeta':`${cards.length} tarjeta${cards.length>1?'s':''}`}</div>
               </div>
               {cards.length===0 && <div className="empty"><div className="icon">💳</div><p>Sin tarjetas aún</p></div>}
-              {cards.length>0 && <HomeSummary {...homeTotals} months={monthsToPay} upcoming={upcomingPayments}/>}
+              {cards.length>0 && <HomeSummary {...homeTotals} months={monthsToPay} upcoming={upcomingPayments} cash={cash} onEditCash={()=>setCashModal(true)}/>}
               {cards.map((card,i)=>(
                 <div key={card.id} style={{animationDelay:`${i*40}ms`}}>
                   <CardListItem
@@ -1716,6 +1767,13 @@ function App() {
           onSave={saveCommit}
           onDelete={deleteCommit}
           onClose={()=>setCommitModal(null)}
+        />
+      )}
+      {cashModal && (
+        <CashForm
+          initial={cash}
+          onSave={v=>setCash(v)}
+          onClose={()=>setCashModal(false)}
         />
       )}
     </div>
