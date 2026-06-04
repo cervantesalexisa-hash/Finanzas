@@ -119,16 +119,6 @@
     padding: 15px 16px 13px;
     color: #fff; position: relative; overflow: hidden;
   }
-  .cc-header::before {
-    content: ''; position: absolute; top: -30px; right: -30px;
-    width: 120px; height: 120px; border-radius: 50%;
-    background: rgba(255,255,255,.1);
-  }
-  .cc-header::after {
-    content: ''; position: absolute; bottom: -40px; right: 20px;
-    width: 90px; height: 90px; border-radius: 50%;
-    background: rgba(255,255,255,.07);
-  }
   .cc-name { font-size: 15px; font-weight: 700; }
   .cc-chips { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
   .cc-chip { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; background: rgba(255,255,255,.2); }
@@ -295,13 +285,13 @@
   .color-dot.selected { border-color: var(--text); transform: scale(1.15); }
 
   /* GRADIENTS */
-  .grad-yellow  { background: linear-gradient(135deg, #c8971a, #e8b332); }
-  .grad-red     { background: linear-gradient(135deg, #b71c1c, #e53935); }
-  .grad-blue    { background: linear-gradient(135deg, #0d47a1, #1976d2); }
-  .grad-skyblue { background: linear-gradient(135deg, #0277bd, #039be5); }
-  .grad-purple  { background: linear-gradient(135deg, #6a1b9a, #ab47bc); }
-  .grad-orange  { background: linear-gradient(135deg, #bf360c, #f4511e); }
-  .grad-green   { background: linear-gradient(135deg, #1b5e20, #388e3c); }
+  .grad-yellow  { background: #e8b332; }
+  .grad-red     { background: #e53935; }
+  .grad-blue    { background: #1976d2; }
+  .grad-skyblue { background: #039be5; }
+  .grad-purple  { background: #ab47bc; }
+  .grad-orange  { background: #f4511e; }
+  .grad-green   { background: #388e3c; }
 
   /* COMMITMENTS */
   .month-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 12px 16px; scrollbar-width: none; }
@@ -1259,7 +1249,7 @@ function CommitForm({ initial, onSave, onDelete, onClose }) {
   const [f, setF] = useState(initial ? {...initial, amount: initial.amount===0?'':initial.amount} : blank);
   const set = k => e => setF(p=>({...p,[k]:e.target.value}));
   return (
-    <Sheet title={initial?'Editar Compromiso':'Nuevo Compromiso'} onClose={onClose}>
+    <Sheet title={initial?'Editar Pago':'Nuevo Pago'} onClose={onClose}>
       <div className="sheet-body">
         <div className="field"><label>Descripción</label><input value={f.desc} onChange={set('desc')} placeholder="ej. Netflix, Renta…"/></div>
         <div className="field"><label>Monto</label><input type="number" value={f.amount} onChange={set('amount')} placeholder="0.00" inputMode="decimal"/></div>
@@ -1363,7 +1353,7 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, on
         <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6}}>Dinero disponible</div>
         {cashVal>0
           ? <>
-              <div style={{fontSize:33,fontWeight:700,letterSpacing:-1,marginTop:3,color:'var(--green)'}}>{fmt(cashVal)}</div>
+              <div style={{fontSize:33,fontWeight:700,letterSpacing:-1,marginTop:3,color:'var(--text)'}}>{fmt(cashVal)}</div>
               <div style={{fontSize:12,marginTop:1,color: diff>=0?'var(--green)':'var(--red)'}}>
                 {diff>=0 ? `Te alcanza para este mes · sobran ${fmt(diff)}` : `Te faltan ${fmt(-diff)} para este mes`}
               </div>
@@ -1400,9 +1390,14 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, on
                 <span style={{width:9,height:9,borderRadius:'50%',background:p.hex,flexShrink:0}}/>
                 <span style={{fontSize:14,fontWeight:600,color:'var(--text)',flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.name}</span>
                 <span style={{fontSize:15,fontWeight:600,letterSpacing:-.2}}>{fmt(p.amount)}</span>
-                <span style={{fontSize:12,color:p.days<=3?'var(--red)':p.days<=7?'var(--orange)':'var(--text3)',minWidth:54,textAlign:'right'}}>
-                  {p.date.getDate()} {MONTHS[p.date.getMonth()]}
-                </span>
+                <div style={{minWidth:62,textAlign:'right'}}>
+                  <div style={{fontSize:13,fontWeight:600,color:p.days<=3?'var(--red)':p.days<=7?'var(--orange)':'var(--text)'}}>
+                    {p.date.getDate()} {MONTHS[p.date.getMonth()]}
+                  </div>
+                  <div style={{fontSize:11,color:'var(--text3)',marginTop:1}}>
+                    {p.days===0?'hoy':p.days===1?'mañana':`en ${p.days} días`}
+                  </div>
+                </div>
               </div>
             ))
           : <div style={{fontSize:13,color:'var(--text3)',padding:'2px 0 4px'}}>Sin pagos en los próximos 15 días</div>}
@@ -1461,7 +1456,7 @@ function CommitmentsScreen({ commits, onEdit, onTogglePaid, selMonth, setSelMont
         ))}
       </div>
       {active.length===0
-        ? <div className="empty"><div className="icon">📋</div><p>Sin compromisos en este mes</p></div>
+        ? <div className="empty"><div className="icon">📋</div><p>Sin pagos en este mes</p></div>
         : (
           <div style={{background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',margin:'0 16px 12px',overflow:'hidden'}}>
             {active.map(c=>{
@@ -1653,7 +1648,7 @@ function App() {
           {tab==='cards' && (
             <>
               <div className="screen-header">
-                <div className="screen-title">Tarjetas 💳</div>
+                <div className="screen-title">Tarjetas</div>
                 <div className="screen-sub">{cards.length===0?'Toca + para agregar tu primera tarjeta':`${cards.length} tarjeta${cards.length>1?'s':''}`}</div>
               </div>
               {cards.length===0 && <div className="empty"><div className="icon">💳</div><p>Sin tarjetas aún</p></div>}
@@ -1675,7 +1670,7 @@ function App() {
           {tab==='commits' && (
             <>
               <div className="screen-header">
-                <div className="screen-title">Compromisos 📋</div>
+                <div className="screen-title">Pagos</div>
                 <div className="screen-sub">Pagos mensuales y únicos</div>
               </div>
               <CommitmentsScreen
@@ -1718,7 +1713,7 @@ function App() {
           <IconCards/><span>Tarjetas</span>
         </button>
         <button className={`nav-btn ${tab==='commits'?'active':''}`} onClick={()=>{setTab('commits');setDetail(null);}}>
-          <IconList/><span>Compromisos</span>
+          <IconList/><span>Pagos</span>
         </button>
       </nav>
 
