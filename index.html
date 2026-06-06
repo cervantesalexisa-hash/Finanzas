@@ -535,9 +535,9 @@ function computeCardTotals(card, expenses, msis, payments=[]) {
   const totalToPay = Math.max(0, unpaidExp + pendMsi - totalPayments);
 
   // ── Cycle breakdown (expenses + MSI cuotas) ──
-  const expThisCycle = expenses.filter(e=>!e.paid && dueMonthsAway(e.date, card.cutDay, card.payDay) <= 0).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
-  const expNextCycle = expenses.filter(e=>!e.paid && dueMonthsAway(e.date, card.cutDay, card.payDay) === 1).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
-  const { thisCycleMsi, nextCycleMsi } = getMsiCycleAmounts(msis);
+  const expThisCycle = expenses.filter(e=>!e.paid && !isNextCycle(e.date, card.cutDay)).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+  const expNextCycle = expenses.filter(e=>!e.paid &&  isNextCycle(e.date, card.cutDay)).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+  const { thisCycleMsi, nextCycleMsi } = getMsiCycleAmounts(msis, card.cutDay);
 
   // Los pagos reducen primero lo del ciclo actual
   const thisCycle = Math.max(0, (expThisCycle + thisCycleMsi) - totalPayments);
@@ -561,24 +561,6 @@ function isNextCycle(dateStr, cutDay) {
   return expDate > cutThisMonth;
 }
 
-// Meses que faltan para PAGAR un gasto, según corte y pago de la tarjeta.
-// 0 = este mes (o atrasado), 1 = próximo mes, 2 = en dos meses...
-// Una compra hecha DESPUÉS del corte entra al siguiente estado de cuenta.
-// Si el día de pago cae ANTES que el de corte, ese estado se paga el mes siguiente del cierre.
-function dueMonthsAway(dateStr, cutDay, payDay) {
-  if (!dateStr) return 0;
-  const [y,m,d] = dateStr.split('-').map(Number);
-  const C = parseInt(cutDay)||1, P = parseInt(payDay)||15;
-  let closeAbs = y*12 + (m-1);          // estado de cuenta que captura la compra
-  if (d > C) closeAbs += 1;             // comprado después del corte → siguiente estado
-  const dueAbs = closeAbs + (P <= C ? 1 : 0); // se paga el mes siguiente si el pago < corte
-  return dueAbs - (currentYear*12 + currentMonth);
-}
-// Meses que faltan para una cuota MSI (por su propio mes asignado).
-function msiMonthAway(yi, mi) {
-  return (yi*12 + mi) - (currentYear*12 + currentMonth);
-}
-
 // Returns the date string for a given cuota index of an MSI
 function msiCuotaDate(msi, index) {
   const mi = (parseInt(msi.startMonth) + index) % 12;
@@ -588,20 +570,22 @@ function msiCuotaDate(msi, index) {
 }
 
 // Returns { thisCycleMsi, nextCycleMsi } — unpaid cuotas grouped by current/next cycle
-function getMsiCycleAmounts(msis) {
+function getMsiCycleAmounts(msis, cutDay) {
   let thisCycleMsi = 0, nextCycleMsi = 0;
   msis.forEach(m => {
     const total    = parseInt(m.total)||0;
     const monthly  = parseFloat(m.monthly)||0;
     const paidKeys = m.paid||[];
     for (let i = 0; i < total; i++) {
-      const mi = (parseInt(m.startMonth)+i)%12;
-      const yi = parseInt(m.startYear)+Math.floor((parseInt(m.startMonth)+i)/12);
-      const mk = monthKey(yi,mi);
+      const mk = (() => {
+        const mi = (parseInt(m.startMonth)+i)%12;
+        const yi = parseInt(m.startYear)+Math.floor((parseInt(m.startMonth)+i)/12);
+        return monthKey(yi,mi);
+      })();
       if (paidKeys.includes(mk)) continue; // already paid, skip
-      const away = msiMonthAway(yi, mi);
-      if (away <= 0) thisCycleMsi += monthly;       // este mes o atrasada
-      else if (away === 1) nextCycleMsi += monthly; // próximo mes
+      const dateStr = msiCuotaDate(m, i);
+      if (isNextCycle(dateStr, cutDay)) nextCycleMsi += monthly;
+      else thisCycleMsi += monthly;
     }
   });
   return { thisCycleMsi, nextCycleMsi };
@@ -609,12 +593,15 @@ function getMsiCycleAmounts(msis) {
 
 // Próximos 2 meses a pagar de UNA tarjeta: cuotas MSI de ese mes + (mes próximo) gastos del siguiente ciclo
 function cardMonthsToPay(card, expenses, msis) {
+  const cut = card.cutDay;
+  const nextCycleExp = expenses
+    .filter(e=>!e.paid && isNextCycle(e.date, cut))
+    .reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
   const out = [];
   for (let k=1;k<=2;k++){
     const d  = new Date(currentYear, currentMonth+k, 1);
     const mk = monthKey(d.getFullYear(), d.getMonth());
     let amount = 0;
-    // Cuotas MSI asignadas a ese mes (no pagadas)
     msis.forEach(m=>{
       const total=parseInt(m.total)||0, monthly=parseFloat(m.monthly)||0, paid=m.paid||[];
       for (let i=0;i<total;i++){
@@ -624,10 +611,7 @@ function cardMonthsToPay(card, expenses, msis) {
         if (cuotaMk===mk && !paid.includes(cuotaMk)) amount += monthly;
       }
     });
-    // Gastos cuyo pago real cae en ese mes
-    amount += expenses
-      .filter(e=>!e.paid && dueMonthsAway(e.date, card.cutDay, card.payDay) === k)
-      .reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
+    if (k===1) amount += nextCycleExp; // compras tras el corte se cobran el mes próximo
     out.push({ label: MONTHS[d.getMonth()], year: d.getFullYear(), amount });
   }
   return out;
@@ -673,9 +657,9 @@ function fmtDateLabel(dateStr) {
   return date.toLocaleDateString('es-MX',{day:'numeric',month:'short',year: y!==now.getFullYear()?'numeric':undefined}).toUpperCase();
 }
 
-function ExpensesTab({ expenses, cutDay, payDay, onToggle, onEdit }) {
-  const thisCycleExp = expenses.filter(e => dueMonthsAway(e.date, cutDay, payDay) <= 0);
-  const nextCycleExp = expenses.filter(e => dueMonthsAway(e.date, cutDay, payDay) >= 1);
+function ExpensesTab({ expenses, cutDay, onToggle, onEdit }) {
+  const thisCycleExp = expenses.filter(e => !isNextCycle(e.date, cutDay));
+  const nextCycleExp = expenses.filter(e =>  isNextCycle(e.date, cutDay));
 
   const pendThis = thisCycleExp.filter(e=>!e.paid).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
   const pendNext = nextCycleExp.filter(e=>!e.paid).reduce((a,e)=>a+(parseFloat(e.amount)||0),0);
@@ -720,7 +704,7 @@ function ExpensesTab({ expenses, cutDay, payDay, onToggle, onEdit }) {
       {expenses.length === 0
         ? <div className="empty"><div className="icon">🧾</div><p>Sin gastos. Toca + Gasto para agregar.</p></div>
         : groups.map(group => {
-          const groupIsNext = dueMonthsAway(group.date, cutDay, payDay) >= 1;
+          const groupIsNext = isNextCycle(group.date, cutDay);
           return (
             <div key={group.date} style={{marginBottom:4}}>
               <div style={{display:'flex',alignItems:'center',gap:8,padding:'8px 20px 5px'}}>
@@ -1031,7 +1015,7 @@ function CardDetail({ card, expenses, msis, payments, onBack, onEditCard,
 
       {/* Tab Content */}
       <div style={{marginTop:8}}>
-        {activeTab==='gastos'     && <ExpensesTab expenses={expenses} cutDay={card.cutDay} payDay={card.payDay} onToggle={onToggleExpense} onEdit={exp=>onEditExpense(exp,card.id)}/>}
+        {activeTab==='gastos'     && <ExpensesTab expenses={expenses} cutDay={card.cutDay} onToggle={onToggleExpense} onEdit={exp=>onEditExpense(exp,card.id)}/>}
         {activeTab==='msi'        && <MsiTab msis={msis} onTogglePaid={onToggleMsiPaid} onEdit={item=>onEditMsi(item,card.id)}/>}
         {activeTab==='pagos'      && <PaymentsTab payments={payments} onEdit={p=>onEditPayment(p,card.id)}/>}
         {activeTab==='categorias' && <CategoriesTab expenses={expenses}/>}
@@ -1073,7 +1057,7 @@ function CardForm({ initial, onSave, onDelete, onClose }) {
   );
 }
 
-function ExpenseForm({ initial, cutDay, payDay, onSave, onDelete, onClose }) {
+function ExpenseForm({ initial, cutDay, onSave, onDelete, onClose }) {
   const blank = {
     desc:'', amount:'', cat:CATS[12], date:today.toISOString().slice(0,10),
     note:'', paid:false, alreadyDiscounted:false
@@ -1082,9 +1066,7 @@ function ExpenseForm({ initial, cutDay, payDay, onSave, onDelete, onClose }) {
     ? {...initial, amount: initial.amount===0?'':initial.amount}
     : {...blank});
   const set = k => e => setF(p=>({...p,[k]:e.target.value}));
-  const away = dueMonthsAway(f.date, cutDay, payDay);
-  const dueD = new Date(currentYear, currentMonth + Math.max(0,away), 1);
-  const dueLabel = away<=0 ? 'este mes' : `${MONTHS[dueD.getMonth()]}${dueD.getFullYear()!==currentYear?` '${String(dueD.getFullYear()).slice(2)}`:''}`;
+  const isNext = isNextCycle(f.date, cutDay);
 
   return (
     <Sheet title={initial?'Editar Gasto':'Nuevo Gasto'} onClose={onClose}>
@@ -1099,13 +1081,13 @@ function ExpenseForm({ initial, cutDay, payDay, onSave, onDelete, onClose }) {
         <div className="field">
           <label>Fecha</label>
           <input type="date" value={f.date} onChange={set('date')}/>
-          {away>=1 && (
+          {isNext && (
             <div style={{
               marginTop:8, padding:'8px 12px', borderRadius:8,
               background:'rgba(0,122,255,.08)', color:'var(--blue)',
               fontSize:12, fontWeight:600, display:'flex', alignItems:'center', gap:6,
             }}>
-              📅 Este gasto se paga en {dueLabel} (corte {cutDay}, pago {payDay})
+              ⚡ Compra después del corte (día {cutDay}) — va al siguiente estado de cuenta
             </div>
           )}
         </div>
@@ -1223,7 +1205,7 @@ function MsiForm({ initial, onSave, onDelete, onClose }) {
 }
 
 function CommitForm({ initial, onSave, onDelete, onClose }) {
-  const blank = { desc:'', amount:'', cat:CATS[8], month:currentMonth, year:currentYear, repeat:1, paidMonths:[] };
+  const blank = { desc:'', amount:'', cat:CATS[8], day:1, month:currentMonth, year:currentYear, repeat:1, paidMonths:[] };
   const [f, setF] = useState(initial ? {...initial, amount: initial.amount===0?'':initial.amount} : blank);
   const set = k => e => setF(p=>({...p,[k]:e.target.value}));
   return (
@@ -1242,7 +1224,10 @@ function CommitForm({ initial, onSave, onDelete, onClose }) {
           </div>
           <div className="field"><label>Año</label><input type="number" min="2020" max="2035" value={f.year} onChange={set('year')}/></div>
         </div>
-        <div className="field"><label>Repetir (meses)</label><input type="number" min="1" max="120" value={f.repeat} onChange={set('repeat')}/></div>
+        <div className="field-row">
+          <div className="field"><label>Día de pago</label><input type="number" min="1" max="31" value={f.day} onChange={set('day')} inputMode="numeric"/></div>
+          <div className="field"><label>Repetir (meses)</label><input type="number" min="1" max="120" value={f.repeat} onChange={set('repeat')}/></div>
+        </div>
       </div>
       <div className="sheet-actions">
         {initial && <button className="btn-danger" onClick={()=>{onDelete(initial.id);onClose();}}>Eliminar</button>}
@@ -1565,12 +1550,19 @@ function App() {
 
   // ── A pagar por mes — GENERAL (próximos 2 meses, todas las tarjetas) ──
   const monthsToPay = useMemo(()=>{
+    // Gastos pendientes del siguiente ciclo → se cobran el mes próximo
+    let expNext = 0;
+    expenses.forEach(e=>{
+      if (e.paid) return;
+      const card = cards.find(c=>c.id===e.cardId);
+      const cut = card ? card.cutDay : 1;
+      if (isNextCycle(e.date, cut)) expNext += parseFloat(e.amount)||0;
+    });
     const out = [];
     for (let k=1;k<=2;k++){
       const d  = new Date(currentYear, currentMonth+k, 1);
       const mk = monthKey(d.getFullYear(), d.getMonth());
       let amount = 0;
-      // Cuotas MSI de ese mes
       msis.forEach(m=>{
         const total=parseInt(m.total)||0, monthly=parseFloat(m.monthly)||0, paid=m.paid||[];
         for (let i=0;i<total;i++){
@@ -1580,13 +1572,7 @@ function App() {
           if (cuotaMk===mk && !paid.includes(cuotaMk)) amount += monthly;
         }
       });
-      // Gastos cuyo pago real cae en ese mes (según corte/pago de cada tarjeta)
-      expenses.forEach(e=>{
-        if (e.paid) return;
-        const card = cards.find(c=>c.id===e.cardId);
-        const cut = card ? card.cutDay : 1, pay = card ? card.payDay : 15;
-        if (dueMonthsAway(e.date, cut, pay) === k) amount += parseFloat(e.amount)||0;
-      });
+      if (k===1) amount += expNext;
       out.push({ mk, label: MONTHS[d.getMonth()], year: d.getFullYear(), amount });
     }
     return out;
@@ -1595,6 +1581,7 @@ function App() {
   // ── Próximos pagos (tarjetas que vencen dentro de 15 días) ──
   const upcomingPayments = useMemo(()=>{
     const list = [];
+    const todayMid = new Date(currentYear, currentMonth, today.getDate());
     cards.forEach(c=>{
       const t = computeCardTotals(
         c,
@@ -1612,9 +1599,28 @@ function App() {
         list.push({ id:c.id, name:c.name||'Sin nombre', hex:ci.hex, amount:t.thisCycle, days, date });
       }
     });
+    // Pagos de la pestaña Pagos (compromisos) con fecha propia
+    commits.forEach(c=>{
+      const day = parseInt(c.day)||1;
+      const repeat = parseInt(c.repeat)||1;
+      const startAbs = parseInt(c.year)*12 + parseInt(c.month);
+      const endAbs = startAbs + repeat - 1;
+      const paid = c.paidMonths||[];
+      for (let k=0;k<=1;k++){
+        const dAbs = (currentYear*12+currentMonth) + k;
+        if (dAbs < startAbs || dAbs > endAbs) continue;   // no activo ese mes
+        const yy = Math.floor(dAbs/12), mm = dAbs%12;
+        if (paid.includes(monthKey(yy,mm))) continue;     // ya pagado ese mes
+        const date = new Date(yy, mm, day);
+        const days = Math.round((date - todayMid)/86400000);
+        if (days < 0) continue;                            // ya pasó este mes, ver el próximo
+        if (days <= 15) list.push({ id:'k-'+c.id, name:c.desc||'Pago', hex:'#8e8e93', amount:parseFloat(c.amount)||0, days, date });
+        break;                                             // solo la próxima ocurrencia
+      }
+    });
     list.sort((a,b)=>a.days-b.days);
     return list;
-  }, [cards, expenses, msis, payments]);
+  }, [cards, expenses, msis, payments, commits]);
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
@@ -1687,8 +1693,8 @@ function App() {
               onBack={()=>setDetail(null)}
               onEditCard={c=>setCardModal(c)}
               onToggleExpense={toggleExpense}
-              onEditExpense={(exp,cid)=>setExpModal({cardId:cid, cutDay:cards.find(c=>c.id===cid)?.cutDay, payDay:cards.find(c=>c.id===cid)?.payDay, exp})}
-              onAddExpense={cid=>setExpModal({cardId:cid, cutDay:cards.find(c=>c.id===cid)?.cutDay, payDay:cards.find(c=>c.id===cid)?.payDay})}
+              onEditExpense={(exp,cid)=>setExpModal({cardId:cid, cutDay:cards.find(c=>c.id===cid)?.cutDay, exp})}
+              onAddExpense={cid=>setExpModal({cardId:cid, cutDay:cards.find(c=>c.id===cid)?.cutDay})}
               onToggleMsiPaid={toggleMsiPaid}
               onEditMsi={(item,cid)=>setMsiModal({cardId:cid,item})}
               onAddMsi={cid=>setMsiModal({cardId:cid})}
@@ -1725,7 +1731,6 @@ function App() {
         <ExpenseForm
           initial={expModal.exp||null}
           cutDay={expModal.cutDay||1}
-          payDay={expModal.payDay||15}
           onSave={f=>saveExpense(f,expModal.cardId)}
           onDelete={deleteExpense}
           onClose={()=>setExpModal(null)}
