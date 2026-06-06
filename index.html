@@ -339,7 +339,7 @@ const COLORS = [
 const CATS = [
   '🛒 Supermercado','🍽️ Comida','⛽ Gasolina','🚗 Auto',
   '🏥 Salud','🎬 Entretenimiento','👕 Ropa','🏠 Hogar',
-  '🔧 Servicios','✈️ Viajes','🎓 Educación','💊 Farmacia','📦 Otro',
+  '🔧 Servicios','✈️ Viajes','🎓 Educación','💊 Farmacia','💼 Negocio','📦 Otro',
 ];
 
 const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -1059,7 +1059,7 @@ function CardForm({ initial, onSave, onDelete, onClose }) {
 
 function ExpenseForm({ initial, cutDay, onSave, onDelete, onClose }) {
   const blank = {
-    desc:'', amount:'', cat:CATS[12], date:today.toISOString().slice(0,10),
+    desc:'', amount:'', cat:CATS[13], date:today.toISOString().slice(0,10),
     note:'', paid:false, alreadyDiscounted:false
   };
   const [f, setF] = useState(initial
@@ -1589,14 +1589,16 @@ function App() {
         msis.filter(m=>m.cardId===c.id),
         payments.filter(p=>p.cardId===c.id)
       );
-      const days = daysUntil(parseInt(c.payDay)||15);
-      if (days <= 15 && t.thisCycle > 0) {
-        const dd = parseInt(c.payDay)||15;
-        const date = dd >= today.getDate()
-          ? new Date(currentYear, currentMonth, dd)
-          : new Date(currentYear, currentMonth+1, dd);
+      const dd = parseInt(c.payDay)||15;
+      // Si el día de pago ya pasó este mes, el próximo pago es el mes siguiente,
+      // y lo que vence entonces es el monto del SIGUIENTE mes, no el de este.
+      const payAway = dd >= today.getDate() ? 0 : 1;
+      const amount  = payAway === 0 ? t.thisCycle : t.nextCycle;
+      const date    = new Date(currentYear, currentMonth + payAway, dd);
+      const days    = Math.round((date - todayMid)/86400000);
+      if (days <= 15 && amount > 0) {
         const ci = COLORS.find(x=>x.id===c.color)||COLORS[2];
-        list.push({ id:c.id, name:c.name||'Sin nombre', hex:ci.hex, amount:t.thisCycle, days, date });
+        list.push({ id:c.id, name:c.name||'Sin nombre', hex:ci.hex, amount, days, date });
       }
     });
     // Pagos de la pestaña Pagos (compromisos) con fecha propia
