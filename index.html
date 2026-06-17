@@ -4,6 +4,17 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Finanzas Personales</title>
+<script>
+  // Silenciar el aviso de "in-browser Babel transformer" (es solo informativo)
+  (function(){
+    var _w = console.warn;
+    console.warn = function(){
+      var m = arguments[0];
+      if (typeof m === 'string' && m.indexOf('in-browser Babel transformer') !== -1) return;
+      return _w.apply(console, arguments);
+    };
+  })();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.4/babel.min.js"></script>
@@ -194,7 +205,10 @@
   .check-btn svg { width: 13px; height: 13px; color: #fff; }
 
   /* MSI */
-  .msi-item { padding: 14px 16px; border-bottom: 1px solid var(--sep); }
+  .msi-item { padding: 17px 18px; border-bottom: 1px solid var(--sep); }
+  .msi-report-btn { flex-shrink:0; font-size:12.5px; font-weight:600; color:var(--text); background:var(--card);
+    border:1px solid var(--sep); border-radius:999px; padding:7px 14px; cursor:pointer; transition:background .15s; }
+  .msi-report-btn:active { background:var(--bg); }
   .msi-item:last-child { border-bottom: none; }
   .msi-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
   .msi-desc { font-size: 15px; font-weight: 500; }
@@ -226,20 +240,22 @@
   /* MODAL / SHEET */
   .overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.4);
-    z-index: 100; display: flex; align-items: flex-end;
+    z-index: 100; display: flex; align-items: center; justify-content: center;
+    padding: 16px;
     animation: fadeIn .2s ease;
   }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .sheet {
-    width: 100%; max-width: 430px; margin: 0 auto;
-    background: var(--card); border-radius: 20px 20px 0 0;
-    padding: 0 0 calc(24px + var(--safe-bottom));
-    max-height: 92vh; overflow-y: auto;
-    animation: slideUp .3s cubic-bezier(.4,0,.2,1);
+    width: 100%; max-width: 420px; margin: 0 auto;
+    background: var(--card); border-radius: 24px;
+    padding: 0 0 22px;
+    max-height: 88vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.28);
+    animation: popIn .26s cubic-bezier(.2,.9,.3,1.1);
   }
-  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--sep); margin: 10px auto 4px; }
-  .sheet-title { font-size: 17px; font-weight: 700; text-align: center; padding: 10px 20px 14px; }
+  @keyframes popIn { from { opacity: 0; transform: scale(.92) translateY(10px); } to { opacity: 1; transform: none; } }
+  .sheet-handle { display: none; }
+  .sheet-title { font-size: 17px; font-weight: 700; text-align: center; padding: 20px 20px 14px; }
   .sheet-body { padding: 0 20px; }
   .field { margin-bottom: 14px; }
   .field label { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 6px; }
@@ -778,58 +794,49 @@ function MsiTab({ msis, onTogglePaid, onEdit }) {
           const yi = parseInt(item.startYear)+Math.floor((parseInt(item.startMonth)+i)/12);
           return { num: i+1, key: monthKey(yi,mi), isPre: i < paidCount };
         });
+        const sM = parseInt(item.startMonth)||0, sY = parseInt(item.startYear)||currentYear;
+        const eIdx = Math.max(0,total-1);
+        const eMi = (sM+eIdx)%12, eYi = sY+Math.floor((sM+eIdx)/12);
+        const rangeLabel = `${MONTHS[sM]} ${sY} – ${MONTHS[eMi]} ${eYi}`;
+        const paidAmount = paidKeys.length*monthly;
         return (
           <div key={item.id} className="msi-item">
-            {/* Title row */}
-            <div className="msi-top">
-              <span className="msi-desc">{item.desc}</span>
-              <span className="msi-total" style={{color: remaining===0?'var(--green)':'var(--blue)'}}>
-                {remaining===0 ? '✓ Pagado' : fmt(remaining*monthly)}
-              </span>
+            {/* Título + acción */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:17,fontWeight:700,letterSpacing:-.3}}>{item.desc}</div>
+                <div style={{fontSize:12.5,color:'var(--text3)',marginTop:2}}>{rangeLabel} · {fmt(monthly)}/mes</div>
+              </div>
+              <button className="msi-report-btn" onClick={()=>onEdit(item)}>
+                {remaining===0 ? '✓ Pagado' : 'Editar'}
+              </button>
             </div>
 
-            {/* iOS-style subtitle */}
-            <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
-              <span style={{
-                fontSize:12,fontWeight:600,color:'var(--text2)',
-                background:'var(--bg)',borderRadius:6,padding:'2px 8px',
-              }}>
-                {paidKeys.length===total
-                  ? `${total} de ${total} cuotas`
-                  : `Pago ${paidKeys.length+1} de ${total}`}
-              </span>
-              <span style={{fontSize:12,color:'var(--text2)'}}>·</span>
-              <span style={{fontSize:12,color:'var(--text2)'}}>{fmt(monthly)}/mes</span>
+            {/* Monto pagado de total */}
+            <div style={{display:'flex',alignItems:'baseline',gap:8,margin:'14px 0 12px'}}>
+              <span style={{fontSize:30,fontWeight:800,letterSpacing:-1,color:'var(--text)'}}>{fmt(paidAmount)}</span>
+              <span style={{fontSize:14,fontWeight:500,color:'var(--text3)'}}>de {fmt(total*monthly)}</span>
             </div>
 
-            <ProgressBar pct={pct}/>
-
-            {/* Cuota dots */}
-            <div className="msi-dots" style={{marginTop:10}}>
+            {/* Barra segmentada (una por cuota, toca para marcar) */}
+            <div style={{display:'flex',gap:4}}>
               {months.map((m)=>{
                 const isPaid = paidKeys.includes(m.key);
-                const isNew  = isPaid && !m.isPre; // newly ticked by user
                 return (
-                  <button key={m.num}
-                    className={`msi-dot ${isPaid?'paid':''} ${m.isPre&&isPaid?'pre-paid':''}`}
-                    onClick={()=>onTogglePaid(item.id,m.key)}
-                    title={`Cuota ${m.num}`}>
-                    {isPaid ? (m.isPre ? '●' : '✓') : m.num}
-                  </button>
+                  <button key={m.num} onClick={()=>onTogglePaid(item.id,m.key)} title={`Cuota ${m.num}`}
+                    style={{flex:1,height:12,borderRadius:6,border:'none',cursor:'pointer',padding:0,
+                      background: isPaid?'var(--green)':'rgba(52,199,89,.18)',
+                      transition:'background .2s'}}/>
                 );
               })}
             </div>
 
-            {/* Pending info */}
+            {/* Pendiente */}
             {remaining > 0 && (
-              <div style={{fontSize:12,color:'var(--text2)',marginTop:8}}>
+              <div style={{fontSize:12.5,color:'var(--text2)',marginTop:11}}>
                 Quedan <strong style={{color:'var(--text)'}}>{remaining} cuotas</strong> · {fmt(remaining*monthly)} pendiente
               </div>
             )}
-
-            <div style={{textAlign:'right',marginTop:6}}>
-              <button className="item-edit-btn" onClick={()=>onEdit(item)}>editar</button>
-            </div>
           </div>
         );
       })}
@@ -1221,7 +1228,7 @@ function MsiForm({ initial, onSave, onDelete, onClose }) {
 }
 
 function CommitForm({ initial, onSave, onDelete, onClose }) {
-  const blank = { desc:'', amount:'', cat:CATS[8], month:currentMonth, year:currentYear, repeat:1, paidMonths:[] };
+  const blank = { desc:'', amount:'', cat:CATS[8], day:1, month:currentMonth, year:currentYear, repeat:1, paidMonths:[] };
   const [f, setF] = useState(initial ? {...initial, amount: initial.amount===0?'':initial.amount} : blank);
   const set = k => e => setF(p=>({...p,[k]:e.target.value}));
   return (
@@ -1233,14 +1240,17 @@ function CommitForm({ initial, onSave, onDelete, onClose }) {
           <select value={f.cat} onChange={set('cat')}>{CATS.map(c=><option key={c}>{c}</option>)}</select>
         </div>
         <div className="field-row">
+          <div className="field"><label>Día de cobro</label><input type="number" min="1" max="31" value={f.day} onChange={set('day')} placeholder="1" inputMode="numeric"/></div>
           <div className="field"><label>Mes Inicio</label>
             <select value={f.month} onChange={set('month')}>
               {MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}
             </select>
           </div>
-          <div className="field"><label>Año</label><input type="number" min="2020" max="2035" value={f.year} onChange={set('year')}/></div>
         </div>
-        <div className="field"><label>Repetir (meses)</label><input type="number" min="1" max="120" value={f.repeat} onChange={set('repeat')}/></div>
+        <div className="field-row">
+          <div className="field"><label>Año</label><input type="number" min="2020" max="2035" value={f.year} onChange={set('year')}/></div>
+          <div className="field"><label>Repetir (meses)</label><input type="number" min="1" max="120" value={f.repeat} onChange={set('repeat')}/></div>
+        </div>
       </div>
       <div className="sheet-actions">
         {initial && <button className="btn-danger" onClick={()=>{onDelete(initial.id);onClose();}}>Eliminar</button>}
@@ -1312,9 +1322,55 @@ function CashForm({ initial, onSave, onClose }) {
 }
 
 // ─── HOME SUMMARY (todas las tarjetas) ────────────────────────────────────────
-function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, onEditCash }) {
+// ─── DONUT (gasto por categoría) ──────────────────────────────────────────────
+function Donut({ data, size=128, stroke=20 }) {
+  const total = data.reduce((a,d)=>a+d.value,0) || 1;
+  const r=(size-stroke)/2, c=2*Math.PI*r;
+  let acc=0;
+  return (
+    <svg width={size} height={size} style={{transform:'rotate(-90deg)'}}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--sep)" strokeWidth={stroke}/>
+      {data.map((d,i)=>{
+        const len=c*(d.value/total), gap=c-len, off=-acc; acc+=len;
+        return <circle key={i} cx={size/2} cy={size/2} r={r} fill="none" stroke={d.color} strokeWidth={stroke}
+          strokeDasharray={`${len} ${gap}`} strokeDashoffset={off}
+          style={{transition:'stroke-dasharray .6s ease'}}/>;
+      })}
+    </svg>
+  );
+}
+
+function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, expenses, msis, commits, onEditCash }) {
   const cashVal = parseFloat(cash)||0;
   const diff = cashVal - thisMonth;
+  const PALETTE = ['#2f6bd6','#34a853','#f4511e','#ab47bc','#00897b','#ec407a','#f9a825','#90a4ae'];
+  const catData = (()=>{
+    const map = {};
+    const add = (k,v)=>{ if(v>0) map[k]=(map[k]||0)+v; };
+    // gastos sueltos por categoría
+    (expenses||[]).forEach(e=> add(e.cat||'📦 Otro', parseFloat(e.amount)||0));
+    // MSI pendientes → un solo grupo
+    let msiRem = 0;
+    (msis||[]).forEach(m=>{
+      const t=parseInt(m.total)||0, mo=parseFloat(m.monthly)||0, p=(m.paid||[]).length;
+      msiRem += Math.max(0,t-p)*mo;
+    });
+    add('📅 Meses sin intereses', msiRem);
+    // pagos fijos activos este mes
+    const curMK = monthKey(currentYear, currentMonth);
+    (commits||[]).forEach(c=>{
+      const sm = monthKey(parseInt(c.year), parseInt(c.month));
+      const mths = parseInt(c.repeat)||1;
+      const end = new Date(parseInt(c.year), parseInt(c.month)+mths-1, 1);
+      const endMK = monthKey(end.getFullYear(), end.getMonth());
+      if (sm<=curMK && curMK<=endMK && !((c.paidMonths||[]).includes(curMK))) add(c.cat||'📦 Otro', parseFloat(c.amount)||0);
+    });
+    const arr = Object.entries(map).map(([label,value])=>({label,value})).filter(d=>d.value>0).sort((a,b)=>b.value-a.value);
+    const top = arr.slice(0,6), rest = arr.slice(6);
+    if (rest.length) top.push({ label:'➕ Otros', value: rest.reduce((a,d)=>a+d.value,0) });
+    return top.map((d,i)=>({ ...d, color: PALETTE[i%PALETTE.length] }));
+  })();
+  const catTotal = catData.reduce((a,d)=>a+d.value,0);
   return (
     <div style={{
       margin:'2px 16px 18px',
@@ -1353,9 +1409,34 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, on
         </div>
       </div>
 
-      {/* Próximos pagos (15 días) */}
+      {/* Gastos por categoría (dona) */}
+      {catTotal>0 && (
+        <div style={{marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
+          <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:10}}>Gastos por categoría</div>
+          <div style={{display:'flex',alignItems:'center',gap:16}}>
+            <div style={{position:'relative',width:128,height:128,flexShrink:0}}>
+              <Donut data={catData} size={128} stroke={20}/>
+              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+                <div style={{fontSize:15,fontWeight:700,letterSpacing:-.3}}>{fmt(catTotal)}</div>
+                <div style={{fontSize:10,color:'var(--text3)',marginTop:1}}>total</div>
+              </div>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              {catData.map(d=>(
+                <div key={d.label} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}}>
+                  <span style={{width:9,height:9,borderRadius:3,background:d.color,flexShrink:0}}/>
+                  <span style={{fontSize:13,color:'var(--text)',flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{d.label.split(' ').slice(1).join(' ')||d.label}</span>
+                  <span style={{fontSize:12.5,fontWeight:600,color:'var(--text2)'}}>{Math.round(d.value/catTotal*100)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Próximos pagos */}
       <div style={{marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
-        <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:upcoming&&upcoming.length?6:4}}>Próximos pagos · 15 días</div>
+        <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:upcoming&&upcoming.length?6:4}}>Próximos pagos</div>
         {upcoming && upcoming.length>0
           ? upcoming.map((p,i)=>(
               <div key={p.id} style={{
@@ -1363,7 +1444,9 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, on
                 padding:'8px 0',
                 borderTop: i>0 ? '1px solid var(--sep)' : 'none',
               }}>
-                <span style={{width:9,height:9,borderRadius:'50%',background:p.hex,flexShrink:0}}/>
+                {p.isCommit
+                  ? <span style={{width:18,textAlign:'center',fontSize:15,flexShrink:0}}>{p.emoji}</span>
+                  : <span style={{width:9,height:9,borderRadius:'50%',background:p.hex,flexShrink:0}}/>}
                 <span style={{fontSize:14,fontWeight:600,color:'var(--text)',flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.name}</span>
                 <span style={{fontSize:15,fontWeight:600,letterSpacing:-.2}}>{fmt(p.amount)}</span>
                 <div style={{minWidth:62,textAlign:'right'}}>
@@ -1376,7 +1459,7 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, on
                 </div>
               </div>
             ))
-          : <div style={{fontSize:13,color:'var(--text3)',padding:'2px 0 4px'}}>Sin pagos en los próximos 15 días</div>}
+          : <div style={{fontSize:13,color:'var(--text3)',padding:'2px 0 4px'}}>Sin pagos próximos</div>}
       </div>
 
       {months && months.length>0 && (
@@ -1442,7 +1525,7 @@ function CommitmentsScreen({ commits, onEdit, onTogglePaid, selMonth, setSelMont
                   <div className="commit-top">
                     <div style={{flex:1,minWidth:0}}>
                       <div className="commit-desc" style={{opacity:isPaid?.5:1,textDecoration:isPaid?'line-through':'none'}}>{c.desc}</div>
-                      <div className="commit-meta">{c.cat.split(' ').slice(1).join(' ')} · {parseInt(c.repeat)>1?`${c.repeat} meses`:'Único'}</div>
+                      <div className="commit-meta">{c.cat.split(' ').slice(1).join(' ')} · Día {parseInt(c.day)||1} de cada mes</div>
                     </div>
                     <div style={{display:'flex',gap:10,alignItems:'center'}}>
                       <span className="commit-amount" style={{opacity:isPaid?.5:1}}>{fmt(c.amount)}</span>
@@ -1558,8 +1641,19 @@ function App() {
       grandTotal += t.totalToPay;
       thisMonth  += t.thisCycle;
     });
+    // Pagos fijos activos este mes y no pagados → suman a "Este mes" (no a la deuda total)
+    const curMK = monthKey(currentYear, currentMonth);
+    commits.forEach(c=>{
+      const sm = monthKey(parseInt(c.year), parseInt(c.month));
+      const mths = parseInt(c.repeat)||1;
+      const end = new Date(parseInt(c.year), parseInt(c.month)+mths-1, 1);
+      const endMK = monthKey(end.getFullYear(), end.getMonth());
+      if (sm <= curMK && curMK <= endMK && !((c.paidMonths||[]).includes(curMK))) {
+        thisMonth += parseFloat(c.amount)||0;
+      }
+    });
     return { grandTotal, thisMonth, weekly: thisMonth/4 };
-  }, [cards, expenses, msis, payments]);
+  }, [cards, expenses, msis, payments, commits]);
 
   // ── A pagar por mes — GENERAL (próximos 2 meses, todas las tarjetas) ──
   const monthsToPay = useMemo(()=>{
@@ -1608,9 +1702,27 @@ function App() {
         list.push({ id:c.id, name:c.name||'Sin nombre', hex:ci.hex, amount:t.thisCycle, days, date });
       }
     });
+    // Pagos fijos (apartado Pagos) activos este mes y no pagados
+    const curMK = monthKey(currentYear, currentMonth);
+    commits.forEach(c=>{
+      const sm = monthKey(parseInt(c.year), parseInt(c.month));
+      const mths = parseInt(c.repeat)||1;
+      const end = new Date(parseInt(c.year), parseInt(c.month)+mths-1, 1);
+      const endMK = monthKey(end.getFullYear(), end.getMonth());
+      const activeNow = sm <= curMK && curMK <= endMK;
+      const paid = (c.paidMonths||[]).includes(curMK);
+      if (activeNow && !paid && (parseFloat(c.amount)||0) > 0) {
+        const dd = parseInt(c.day)||1;
+        const date = dd >= today.getDate()
+          ? new Date(currentYear, currentMonth, dd)
+          : new Date(currentYear, currentMonth+1, dd);
+        list.push({ id:'commit-'+c.id, name:c.desc||'Pago', amount:parseFloat(c.amount)||0,
+          emoji:(c.cat||'📦 Otro').split(' ')[0], isCommit:true, date, days:daysUntil(dd) });
+      }
+    });
     list.sort((a,b)=>a.days-b.days);
     return list;
-  }, [cards, expenses, msis, payments]);
+  }, [cards, expenses, msis, payments, commits]);
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
@@ -1626,7 +1738,7 @@ function App() {
               </div>
               {cards.length===0
                 ? <div className="empty"><div className="icon">📊</div><p>Sin datos aún. Agrega una tarjeta en la pestaña Tarjetas.</p></div>
-                : <HomeSummary {...homeTotals} months={monthsToPay} upcoming={upcomingPayments} cash={cash} onEditCash={()=>setCashModal(true)}/>}
+                : <HomeSummary {...homeTotals} months={monthsToPay} upcoming={upcomingPayments} cash={cash} expenses={expenses} msis={msis} commits={commits} onEditCash={()=>setCashModal(true)}/>}
             </>
           )}
           {tab==='cards' && (
@@ -1766,4 +1878,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
-
