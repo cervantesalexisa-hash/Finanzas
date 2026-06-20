@@ -35,18 +35,28 @@
     --text3: #aeaeb2;
     --sep: #e5e5ea;
     --blue: #072146;
-    --green: #34c759;
-    --red: #e1251b;
+    --blue-mid: #1f6feb;
+    --blue-bright: #2f80ed;
+    --green: #2f80ed;
+    --red: #0a3a86;
+    --orange: #5a8fd6;
     --black: #121212;
     --yellow: #ffcc00;
     --purple: #820ad1;
     --radius: 16px;
     --radius-sm: 10px;
     --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 16px -4px rgba(16,32,64,.12), 0 2px 6px -2px rgba(16,32,64,.08);
+    --shadow-lg: 0 12px 32px -8px rgba(16,32,64,.18), 0 4px 12px -4px rgba(16,32,64,.10);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
     --nav-h: 80px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  /* Scrollbar oculto en toda la app (sin barra visible) */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
   html, body, #root { height: 100%; overflow: hidden; }
   body {
     font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', BlinkMacSystemFont, system-ui, sans-serif;
@@ -96,13 +106,83 @@
     z-index: 50;
   }
   .nav-btn {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    height: var(--nav-h); background: none; border: none; cursor: pointer;
-    color: var(--text3); transition: color .2s;
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 7px; height: var(--nav-h); background: none; border: none; cursor: pointer;
+    color: var(--text3); transition: color .2s; -webkit-tap-highlight-color: transparent;
   }
-  .nav-btn.active { color: var(--blue); }
-  .nav-btn span { font-size: 13px; font-weight: 600; }
-  .nav-btn.active span { font-weight: 700; }
+  .nav-btn.active { color: var(--blue-mid); }
+  .nav-line {
+    width: 22px; height: 3px; border-radius: 2px; background: var(--blue-mid);
+    opacity: 0; transform: scaleX(.3); transition: opacity .22s ease, transform .22s ease;
+  }
+  .nav-btn.active .nav-line { opacity: 1; transform: scaleX(1); }
+  .nav-lbl { font-size: 13px; font-weight: 600; letter-spacing: .1px; }
+  .nav-btn.active .nav-lbl { font-weight: 700; }
+
+  /* ===== LAYOUT PC ===== */
+  .app-root { display: flex; flex-direction: column; height: 100%; }
+  .side { display: none; }
+  .side-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 19px; font-weight: 700; letter-spacing: -.3px; color: var(--text);
+    padding: 2px 14px 6px;
+  }
+  .side-brand::before {
+    content: ''; width: 28px; height: 28px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(145deg, #2f80ed, #0a3a86);
+    box-shadow: 0 3px 10px -3px rgba(10,58,134,.55), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .side-eyebrow {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text3); padding: 18px 18px 8px;
+  }
+  .side-btn {
+    display: flex; align-items: center; text-align: left; background: none; border: none; cursor: pointer;
+    font-size: 14.5px; font-weight: 550; color: var(--text2);
+    padding: 11px 16px; border-radius: 11px; position: relative;
+    transition: background .18s var(--ease-out), color .18s var(--ease-out), transform .12s var(--ease-out);
+  }
+  .side-btn:hover { background: rgba(16,32,64,.045); color: var(--text); }
+  .side-btn:active { transform: scale(.98); }
+  .side-btn.active { background: rgba(31,111,235,.10); color: var(--blue-mid); font-weight: 700; }
+  .side-btn.active::before {
+    content: ''; position: absolute; left: 3px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 18px; border-radius: 2px; background: var(--blue-mid);
+  }
+  @media (min-width: 900px) {
+    html, body, #root { overflow: hidden; }
+    body { background: #eceef2; }
+    #root { max-width: 100%; }
+    .app-root { flex-direction: row; }
+    .side {
+      display: flex; flex-direction: column; gap: 2px;
+      width: 264px; flex-shrink: 0; height: 100%;
+      border-right: 1px solid rgba(16,32,64,.07); padding: 30px 14px;
+      background: rgba(255,255,255,.72);
+      backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
+    }
+    .app-stack { flex: 1; width: 100%; background: var(--bg); }
+    .bottom-nav { display: none; }
+    .screen-view {
+      padding-left: max(36px, calc((100% - 772px) / 2));
+      padding-right: max(36px, calc((100% - 772px) / 2));
+      padding-bottom: 60px;
+    }
+    .screen-header { padding: 46px 16px 16px; }
+    .screen-title { font-size: 30px; letter-spacing: -.6px; }
+    .detail-header { padding: 38px 16px 14px; }
+    .card-list-item {
+      border: 1px solid rgba(16,32,64,.06);
+      box-shadow: var(--shadow-md);
+      transition: transform .22s var(--ease-out), box-shadow .22s var(--ease-out);
+    }
+    .card-list-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary, .btn-secondary, .head-add { transition: transform .14s var(--ease-out), filter .14s var(--ease-out), background .15s var(--ease-out); }
+    .btn-primary:hover, .head-add:hover { filter: brightness(1.06); }
+  }
+  .btn-primary:active, .btn-secondary:active { transform: scale(.97); }
 
   /* Header add button */
   .head-add {
@@ -283,7 +363,7 @@
     background: var(--blue); color: #fff;
     font-size: 16px; font-weight: 600; border: none; cursor: pointer;
   }
-  .btn-danger { padding: 14px; border-radius: var(--radius-sm); background: rgba(255,59,48,.1); color: var(--red); font-size: 16px; font-weight: 600; border: none; cursor: pointer; }
+  .btn-danger { padding: 14px; border-radius: var(--radius-sm); background: rgba(10,58,134,.10); color: var(--red); font-size: 16px; font-weight: 600; border: none; cursor: pointer; }
   .btn-secondary { flex: 1; padding: 14px; border-radius: var(--radius-sm); background: var(--bg); color: var(--text); font-size: 16px; font-weight: 600; border: none; cursor: pointer; }
 
   /* TOGGLE */
@@ -321,6 +401,13 @@
   .grad-purple  { background: linear-gradient(145deg, #ab47bc, #8b3a9c); }
   .grad-orange  { background: linear-gradient(145deg, #f4511e, #cc3f12); }
   .grad-green   { background: linear-gradient(145deg, #3a9540, #29702d); }
+  .grad-black    { background: linear-gradient(145deg, #3a3a3f, #141417); }
+  .grad-graphite { background: linear-gradient(145deg, #5b6573, #313842); }
+  .grad-teal     { background: linear-gradient(145deg, #16b9a6, #0c7a6e); }
+  .grad-pink     { background: linear-gradient(145deg, #ec4899, #b81d6e); }
+  .grad-indigo   { background: linear-gradient(145deg, #4254c5, #28307e); }
+  .grad-gold     { background: linear-gradient(145deg, #caa14e, #93702a); }
+  .grad-wine     { background: linear-gradient(145deg, #9b2742, #5f1628); }
 
   /* COMMITMENTS */
   .month-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 12px 16px; scrollbar-width: none; }
@@ -358,6 +445,13 @@ const COLORS = [
   { id:'purple',  cls:'grad-purple',  hex:'#ab47bc' },
   { id:'orange',  cls:'grad-orange',  hex:'#f4511e' },
   { id:'green',   cls:'grad-green',   hex:'#388e3c' },
+  { id:'black',    cls:'grad-black',    hex:'#2b2b2e' },
+  { id:'graphite', cls:'grad-graphite', hex:'#576070' },
+  { id:'teal',     cls:'grad-teal',     hex:'#14b8a6' },
+  { id:'pink',     cls:'grad-pink',     hex:'#ec4899' },
+  { id:'indigo',   cls:'grad-indigo',   hex:'#3f51b5' },
+  { id:'gold',     cls:'grad-gold',     hex:'#c2993f' },
+  { id:'wine',     cls:'grad-wine',     hex:'#8e2436' },
 ];
 
 const CATS = [
@@ -427,6 +521,17 @@ const IconChevronLeft = () => (
 const IconChevronRight = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="9 18 15 12 9 6"/>
+  </svg>
+);
+const IconHome = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/>
+  </svg>
+);
+const IconCalendar = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4.5" width="18" height="16" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/>
+    <line x1="8" y1="2.5" x2="8" y2="6"/><line x1="16" y1="2.5" x2="16" y2="6"/>
   </svg>
 );
 
@@ -833,7 +938,7 @@ function MsiTab({ msis, onTogglePaid, onEdit }) {
                 return (
                   <button key={m.num} onClick={()=>onTogglePaid(item.id,m.key)} title={`Cuota ${m.num}`}
                     style={{flex:1,height:12,borderRadius:6,border:'none',cursor:'pointer',padding:0,
-                      background: isPaid?'var(--green)':'rgba(52,199,89,.18)',
+                      background: isPaid?'var(--green)':'rgba(47,128,237,.18)',
                       transition:'background .2s'}}/>
                 );
               })}
@@ -900,7 +1005,7 @@ function PaymentsTab({ payments, onEdit }) {
           <div key={p.id} className="expense-item-sm"
             style={{borderBottom: idx<sorted.length-1?'1px solid var(--sep)':'none'}}
             onClick={()=>onEdit(p)}>
-            <div className="expense-icon-sm" style={{background:'rgba(52,199,89,.12)'}}>💸</div>
+            <div className="expense-icon-sm" style={{background:'rgba(47,128,237,.12)'}}>💸</div>
             <div className="expense-info-sm">
               <div className="expense-desc-sm">Pago{p.note?` · ${p.note}`:''}</div>
               <div className="expense-meta-sm">{fmtDateLabel(p.date)}</div>
@@ -1164,6 +1269,13 @@ function MsiForm({ initial, onSave, onDelete, onClose }) {
   const totalNum  = parseInt(f.total)||0;
   const paidNum   = Math.min(parseInt(f.paidCount)||0, totalNum);
   const isEditing = !!initial;
+  // Vista previa: primera y última cuota según fecha de inicio
+  const sMv = parseInt(f.startMonth)||0, sYv = parseInt(f.startYear)||currentYear;
+  const lastIdx = Math.max(0, totalNum-1);
+  const lMi = (sMv+lastIdx)%12, lYi = sYv + Math.floor((sMv+lastIdx)/12);
+  const datePreview = totalNum>0
+    ? `Primera cuota: ${MONTHS[sMv]} ${sYv}  ·  Última: ${MONTHS[lMi]} ${lYi}`
+    : '';
 
   return (
     <Sheet title={initial?'Editar MSI':'Nuevo MSI / Diferido'} onClose={onClose}>
@@ -1189,6 +1301,11 @@ function MsiForm({ initial, onSave, onDelete, onClose }) {
             <input type="number" min="2020" max="2035" value={f.startYear} onChange={set('startYear')}/>
           </div>
         </div>
+        {datePreview && (
+          <div style={{display:'flex',gap:8,alignItems:'center',background:'rgba(0,122,255,.06)',borderRadius:'var(--radius-sm)',padding:'9px 13px',marginBottom:14,fontSize:12.5,color:'var(--text2)',marginTop:-2}}>
+            📅 {datePreview}
+          </div>
+        )}
 
         {/* Only show paidCount when creating new */}
         {!isEditing && (
@@ -1219,15 +1336,18 @@ function MsiForm({ initial, onSave, onDelete, onClose }) {
         <button className="btn-secondary" onClick={onClose}>Cancelar</button>
         <button className="btn-primary" onClick={()=>{
           if (!f.desc || !f.monthly) return;
-          let prePaid = initial ? initial.paid : [];
-          if (!isEditing && paidNum > 0) {
-            prePaid = Array.from({length:paidNum},(_,i)=>{
-              const mi=(parseInt(f.startMonth)+i)%12;
-              const yi=parseInt(f.startYear)+Math.floor((parseInt(f.startMonth)+i)/12);
-              return monthKey(yi,mi);
-            });
-          }
-          onSave({...f, paid: prePaid, paidCount: paidNum});
+          const keyAt = (i)=>{
+            const mi=(parseInt(f.startMonth)+i)%12;
+            const yi=(parseInt(f.startYear)||currentYear)+Math.floor((parseInt(f.startMonth)+i)/12);
+            return monthKey(yi,mi);
+          };
+          // nº de cuotas pagadas: al crear = lo capturado; al editar = lo que ya tenía
+          const paidN = isEditing
+            ? Math.min((parseInt(initial.paidCount)|| (initial.paid? initial.paid.length:0)), totalNum)
+            : paidNum;
+          // Regenera las pagadas desde la fecha de inicio (mantiene consistencia si cambian las fechas)
+          const prePaid = Array.from({length: Math.max(0,paidN)}, (_,i)=>keyAt(i));
+          onSave({...f, paid: prePaid, paidCount: paidN});
           onClose();
         }}>Guardar</button>
       </div>
@@ -1280,7 +1400,7 @@ function PaymentForm({ initial, onSave, onDelete, onClose }) {
     <Sheet title={initial?'Editar Pago':'Registrar Pago'} onClose={onClose}>
       <div className="sheet-body">
         <div style={{
-          background:'rgba(52,199,89,.08)', borderRadius:'var(--radius-sm)',
+          background:'rgba(47,128,237,.10)', borderRadius:'var(--radius-sm)',
           padding:'10px 14px', marginBottom:14,
           fontSize:13, color:'var(--text2)', lineHeight:1.4,
         }}>
@@ -1306,13 +1426,36 @@ function PaymentForm({ initial, onSave, onDelete, onClose }) {
 }
 
 // ─── CASH FORM (dinero disponible) ────────────────────────────────────────────
+function IncomeForm({ initial, onSave, onClose }) {
+  const [v, setV] = useState(initial && parseFloat(initial)>0 ? String(initial) : '');
+  return (
+    <Sheet title="Ingreso del mes" onClose={onClose}>
+      <div className="sheet-body">
+        <div style={{
+          background:'rgba(47,128,237,.10)', borderRadius:'var(--radius-sm)',
+          padding:'10px 14px', marginBottom:14, fontSize:13, color:'var(--text2)', lineHeight:1.4,
+        }}>
+          💰 Pon cuánto dinero recibes este mes (sueldo, ingresos). La app calculará si te alcanza para todo lo que pagas.
+        </div>
+        <div className="field"><label>¿Cuánto recibes este mes?</label>
+          <input type="number" value={v} onChange={e=>setV(e.target.value)} placeholder="0.00" inputMode="decimal"/>
+        </div>
+      </div>
+      <div className="sheet-actions">
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={()=>{onSave(v);onClose();}}>Guardar</button>
+      </div>
+    </Sheet>
+  );
+}
+
 function CashForm({ initial, onSave, onClose }) {
   const [v, setV] = useState(initial && parseFloat(initial)>0 ? String(initial) : '');
   return (
     <Sheet title="Dinero disponible" onClose={onClose}>
       <div className="sheet-body">
         <div style={{
-          background:'rgba(52,199,89,.08)', borderRadius:'var(--radius-sm)',
+          background:'rgba(47,128,237,.10)', borderRadius:'var(--radius-sm)',
           padding:'10px 14px', marginBottom:14, fontSize:13, color:'var(--text2)', lineHeight:1.4,
         }}>
           💵 Pon cuánto dinero tienes ahorita para pagar. La app te dirá si te alcanza para lo de este mes.
@@ -1348,8 +1491,10 @@ function Donut({ data, size=128, stroke=20 }) {
   );
 }
 
-function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, expenses, msis, commits, onEditCash }) {
+function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, income, expenses, msis, commits, onEditCash, onEditIncome }) {
   const cashVal = parseFloat(cash)||0;
+  const incomeVal = parseFloat(income)||0;
+  const proj = cashVal + incomeVal - thisMonth;
   const diff = cashVal - thisMonth;
   const [selCat, setSelCat] = useState(null);
   // Tonos de azul, uno por cargo/categoría
@@ -1399,7 +1544,7 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, ex
                 {diff>=0 ? `Te alcanza para este mes · sobran ${fmt(diff)}` : `Te faltan ${fmt(-diff)} para este mes`}
               </div>
             </>
-          : <div style={{fontSize:15,color:'var(--blue)',marginTop:4}}>Toca para poner cuánto dinero tienes</div>}
+          : <div style={{fontSize:15,color:'var(--blue-mid)',marginTop:4}}>Toca para poner cuánto dinero tienes</div>}
       </div>
 
       {/* Este mes (lo más importante) · Deuda total · Por semana */}
@@ -1509,17 +1654,15 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, ex
 }
 
 // ─── COMMITMENTS SCREEN ───────────────────────────────────────────────────────
-function CommitmentsScreen({ commits, onEdit, onTogglePaid, selMonth, setSelMonth }) {
-  const monthTabs = useMemo(()=>{
-    const tabs=[];
-    for(let i=-2;i<=8;i++){
-      const d=new Date(currentYear,currentMonth+i,1);
-      tabs.push({key:monthKey(d.getFullYear(),d.getMonth()),label:`${MONTHS[d.getMonth()]} ${d.getFullYear()}`});
-    }
-    return tabs;
-  },[]);
+function CommitmentsScreen({ commits, cards, expenses, msis, payments, onEdit, onTogglePaid, selMonth, setSelMonth }) {
+  const [selDay, setSelDay] = useState(null);
+  const [y, mIdx] = selMonth.split('-').map(Number); // mIdx 0-based
+  const daysInMonth = new Date(y, mIdx+1, 0).getDate();
+  const offset = (new Date(y, mIdx, 1).getDay()+6)%7; // semana inicia lunes
+  const isCurMonth = selMonth === monthKey(currentYear, currentMonth);
+  const todayD = today.getDate();
 
-  const active = commits.filter(c=>{
+  const activeCommits = commits.filter(c=>{
     const sm = monthKey(parseInt(c.year),parseInt(c.month));
     const months = parseInt(c.repeat)||1;
     const endDate = new Date(parseInt(c.year),parseInt(c.month)+months-1,1);
@@ -1527,44 +1670,124 @@ function CommitmentsScreen({ commits, onEdit, onTogglePaid, selMonth, setSelMont
     return sm<=selMonth && selMonth<=endMK;
   });
 
-  const totalPending = active.filter(c=>!((c.paidMonths||[]).includes(selMonth))).reduce((a,c)=>a+(parseFloat(c.amount)||0),0);
-  const totalPaid    = active.filter(c=>(c.paidMonths||[]).includes(selMonth)).reduce((a,c)=>a+(parseFloat(c.amount)||0),0);
+  const dues = [];
+  activeCommits.forEach(c=>dues.push({
+    day: Math.min(daysInMonth, parseInt(c.day)||1), kind:'commit', label:c.desc,
+    sub:(c.cat||'').split(' ').slice(1).join(' '), amount:parseFloat(c.amount)||0,
+    paid:(c.paidMonths||[]).includes(selMonth), ref:c,
+  }));
+  (cards||[]).forEach(cd=>{
+    const amt = computeCardTotals(cd, expenses||[], msis||[], payments||[]).thisCycle;
+    dues.push({
+      day: Math.min(daysInMonth, parseInt(cd.payDay)||1), kind:'card',
+      label:`Pago ${cd.name||'tarjeta'}`, sub:'Día de pago', amount: amt, ref:cd,
+    });
+  });
+  (cards||[]).forEach(cd=>dues.push({
+    day: Math.min(daysInMonth, parseInt(cd.cutDay)||1), kind:'cut',
+    label:`Corte ${cd.name||'tarjeta'}`, sub:'Día de corte', amount:null, ref:cd,
+  }));
+  const pagoDays  = new Set(dues.filter(d=>d.kind!=='cut').map(d=>d.day));
+  const corteDays = new Set(dues.filter(d=>d.kind==='cut').map(d=>d.day));
+  const daySet = new Set(dues.map(d=>d.day));
+  const unpaidDaySet = new Set(dues.filter(d=>(d.kind==='card'||d.kind==='commit')&&!d.paid).map(d=>d.day));
+
+  const navMonth = delta => { const d=new Date(y, mIdx+delta, 1); setSelMonth(monthKey(d.getFullYear(), d.getMonth())); setSelDay(null); };
+  const shown = (selDay ? dues.filter(d=>d.day===selDay) : dues).slice().sort((a,b)=>a.day-b.day);
+  const pending = activeCommits.filter(c=>!((c.paidMonths||[]).includes(selMonth))).reduce((a,c)=>a+(parseFloat(c.amount)||0),0);
+
+  const cells = [];
+  for (let i=0;i<offset;i++) cells.push(null);
+  for (let d=1;d<=daysInMonth;d++) cells.push(d);
+
+  const iconBtn = { width:36,height:36,borderRadius:'50%',border:'1px solid var(--sep)',background:'var(--card)',
+    display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--blue-mid)' };
 
   return (
-    <>
-      <div className="month-tabs">
-        {monthTabs.map(t=>(
-          <button key={t.key} className={`month-tab ${selMonth===t.key?'active':''}`} onClick={()=>setSelMonth(t.key)}>{t.label}</button>
-        ))}
+    <div style={{padding:'0 16px 16px'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'2px 0 14px'}}>
+        <button onClick={()=>navMonth(-1)} style={iconBtn}><span style={{width:18,height:18,display:'flex'}}><IconChevronLeft/></span></button>
+        <div style={{fontSize:17,fontWeight:700}}>{MONTHS[mIdx]} {y}</div>
+        <button onClick={()=>navMonth(1)} style={iconBtn}><span style={{width:18,height:18,display:'flex'}}><IconChevronRight/></span></button>
       </div>
-      {active.length===0
-        ? <div className="empty"><div className="icon">📋</div><p>Sin pagos en este mes</p></div>
-        : (
-          <div style={{background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',margin:'0 16px 12px',overflow:'hidden'}}>
-            {active.map(c=>{
-              const isPaid=(c.paidMonths||[]).includes(selMonth);
+
+      <div style={{background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',padding:'14px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:6}}>
+          {['L','M','M','J','V','S','D'].map((w,i)=><div key={i} style={{textAlign:'center',fontSize:10.5,fontWeight:600,color:'var(--text3)'}}>{w}</div>)}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2}}>
+          {cells.map((d,i)=>{
+            if (d===null) return <div key={i}/>;
+            const has = daySet.has(d);
+            const isToday = isCurMonth && d===todayD;
+            const isSel = selDay===d;
+            return (
+              <button key={i} onClick={()=> has ? setSelDay(isSel?null:d) : setSelDay(null)}
+                style={{aspectRatio:'1',border:'none',borderRadius:10,padding:0,
+                  cursor: has?'pointer':'default',
+                  background: isSel?'var(--blue)': isToday?'rgba(31,111,235,.12)':'transparent',
+                  color: isSel?'#fff':'var(--text)',
+                  display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,
+                  fontSize:13, fontWeight:(isToday||isSel)?700:500}}>
+                {d}
+                <span style={{display:'flex',gap:2,height:6,alignItems:'center',justifyContent:'center'}}>
+                  {pagoDays.has(d) && <span style={{width:5,height:5,borderRadius:'50%',
+                    background: isSel?'#fff': unpaidDaySet.has(d)?'var(--blue-mid)':'rgba(31,111,235,.4)'}}/>}
+                  {corteDays.has(d) && <span style={{width:5,height:5,borderRadius:'50%',boxSizing:'border-box',
+                    border:`1.5px solid ${isSel?'#fff':'var(--blue-mid)'}`,background:'transparent'}}/>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{display:'flex',gap:18,alignItems:'center',justifyContent:'center',marginTop:11,fontSize:11.5,color:'var(--text3)'}}>
+        <span style={{display:'flex',alignItems:'center',gap:5}}><span style={{width:6,height:6,borderRadius:'50%',background:'var(--blue-mid)'}}/>Pago</span>
+        <span style={{display:'flex',alignItems:'center',gap:5}}><span style={{width:6,height:6,borderRadius:'50%',border:'1.5px solid var(--blue-mid)',boxSizing:'border-box'}}/>Corte</span>
+      </div>
+
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'18px 2px 10px'}}>
+        <div style={{fontSize:13,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:.4}}>{selDay?`Día ${selDay}`:'Pagos del mes'}</div>
+        {selDay && <button onClick={()=>setSelDay(null)} style={{fontSize:12.5,color:'var(--blue-mid)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Ver todos</button>}
+      </div>
+
+      {shown.length===0
+        ? <div className="empty"><div className="icon">📅</div><p>{selDay?'Nada este día':'Sin pagos este mes'}</p></div>
+        : <div style={{background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',overflow:'hidden'}}>
+            {shown.map((it,idx)=>{
+              const urgent = isCurMonth && it.kind!=='cut' && it.day>=todayD && (it.day-todayD)<=3 && (it.kind==='card'||!it.paid);
               return (
-                <div key={c.id+selMonth} className="commit-item">
-                  <div className="commit-top">
-                    <div style={{flex:1,minWidth:0}}>
-                      <div className="commit-desc" style={{opacity:isPaid?.5:1,textDecoration:isPaid?'line-through':'none'}}>{c.desc}</div>
-                      <div className="commit-meta">{c.cat.split(' ').slice(1).join(' ')} · Día {parseInt(c.day)||1} de cada mes</div>
-                    </div>
-                    <div style={{display:'flex',gap:10,alignItems:'center'}}>
-                      <span className="commit-amount" style={{opacity:isPaid?.5:1}}>{fmt(c.amount)}</span>
-                      <CheckBtn checked={isPaid} onToggle={()=>onTogglePaid(c.id,selMonth)}/>
-                    </div>
+                <div key={idx} style={{display:'flex',alignItems:'center',gap:12,padding:'13px 16px',borderTop:idx>0?'1px solid var(--sep)':'none'}}>
+                  <div style={{width:40,height:40,borderRadius:12,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
+                    background: urgent?'var(--blue)': it.kind==='cut'?'transparent':'rgba(31,111,235,.10)',
+                    border: it.kind==='cut'?'1.5px solid rgba(31,111,235,.30)':'none'}}>
+                    <span style={{fontSize:15,fontWeight:700,color: urgent?'#fff':'var(--blue-mid)'}}>{it.day}</span>
                   </div>
-                  <button className="item-edit-btn" onClick={()=>onEdit(c)}>editar</button>
+                  <div style={{flex:1,minWidth:0,cursor:it.kind==='commit'?'pointer':'default'}}
+                    onClick={it.kind==='commit'?()=>onEdit(it.ref):undefined}>
+                    <div style={{fontSize:14.5,fontWeight:600,opacity:it.paid?.45:1,textDecoration:it.paid?'line-through':'none',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{it.label}</div>
+                    <div style={{fontSize:12,color:'var(--text3)',marginTop:1}}>{it.sub}{urgent?' · vence pronto':''}</div>
+                  </div>
+                  {it.amount!=null && <span style={{fontSize:15,fontWeight:600,opacity:it.paid?.45:1}}>{fmt(it.amount)}</span>}
+                  {it.kind==='commit'
+                    ? <CheckBtn checked={it.paid} onToggle={()=>onTogglePaid(it.ref.id, selMonth)}/>
+                    : <span style={{fontSize:10.5,color:'var(--text3)',border:'1px solid var(--sep)',borderRadius:6,padding:'2px 7px'}}>{it.kind==='cut'?'corte':'pago'}</span>}
                 </div>
               );
             })}
-            <div className="summary-row"><span>Pagado</span><strong style={{color:'var(--green)'}}>{fmt(totalPaid)}</strong></div>
-            <div className="summary-row" style={{borderTop:'none',paddingTop:0}}><span>Pendiente</span><strong style={{color:'var(--red)'}}>{fmt(totalPending)}</strong></div>
-          </div>
-        )
-      }
-    </>
+          </div>}
+
+      {activeCommits.length>0 && (
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:14,padding:'0 4px'}}>
+          <span style={{fontSize:13,color:'var(--text2)'}}>Pendiente este mes</span>
+          <strong style={{fontSize:16,color:'var(--blue-mid)'}}>{fmt(pending)}</strong>
+        </div>
+      )}
+      <div style={{fontSize:11.5,color:'var(--text3)',marginTop:10,padding:'0 4px',lineHeight:1.4}}>
+        Toca un pago fijo para editarlo · el ✓ lo marca como pagado · toca + arriba para agregar uno.
+      </div>
+    </div>
   );
 }
 
@@ -1578,6 +1801,7 @@ function App() {
   const [payments, setPayments] = useStorage('fp_payments', []);
   const [commits, setCommits]   = useStorage('fp_commits', []);
   const [cash, setCash]         = useStorage('fp_cash', '');
+  const [income, setIncome]     = useStorage('fp_income', '');
 
   const [cardModal,   setCardModal]   = useState(null);
   const [expModal,    setExpModal]    = useState(null);
@@ -1585,6 +1809,7 @@ function App() {
   const [payModal,    setPayModal]    = useState(null);
   const [commitModal, setCommitModal] = useState(null);
   const [cashModal,   setCashModal]   = useState(false);
+  const [incomeModal, setIncomeModal] = useState(false);
   const [selMonth,    setSelMonth]    = useState(currentMK);
 
   // ── Card CRUD ──
@@ -1747,8 +1972,11 @@ function App() {
     return list;
   }, [cards, expenses, msis, payments, commits]);
 
+  // Alertas: pagos que vencen en ≤3 días
+  const dueSoonCount = upcomingPayments.filter(p=>p.days<=3).length;
+
   // ── Respaldo de datos ──
-  const BK_KEYS = ['fp_cards','fp_expenses','fp_msis','fp_payments','fp_commits','fp_cash'];
+  const BK_KEYS = ['fp_cards','fp_expenses','fp_msis','fp_payments','fp_commits','fp_cash','fp_income'];
   const [restoreData, setRestoreData] = useState(null); // datos en espera de confirmación
   const [bkMsg, setBkMsg] = useState('');
   const exportData = () => {
@@ -1786,12 +2014,20 @@ function App() {
     if ('fp_payments' in data) setPayments(pv(data.fp_payments, []));
     if ('fp_commits'  in data) setCommits(pv(data.fp_commits, []));
     if ('fp_cash'     in data) setCash(pv(data.fp_cash, ''));
+    if ('fp_income'   in data) setIncome(pv(data.fp_income, ''));
     setRestoreData(null);
     setBkMsg('✓ Datos restaurados correctamente');
   };
 
   return (
-    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+    <div className="app-root">
+      <aside className="side">
+        <div className="side-brand">Finanzas</div>
+        <div className="side-eyebrow">Menú</div>
+        <button className={`side-btn ${tab==='home'?'active':''}`} onClick={()=>{setTab('home');setDetail(null);}}>Inicio</button>
+        <button className={`side-btn ${tab==='cards'?'active':''}`} onClick={()=>{setTab('cards');setDetail(null);}}>Tarjetas</button>
+        <button className={`side-btn ${tab==='commits'?'active':''}`} onClick={()=>{setTab('commits');setDetail(null);}}>Pagos</button>
+      </aside>
       <div className="app-stack">
 
         {/* LIST SCREEN */}
@@ -1804,7 +2040,7 @@ function App() {
               </div>
               {cards.length===0
                 ? <div className="empty"><div className="icon">📊</div><p>Sin datos aún. Agrega una tarjeta en la pestaña Tarjetas.</p></div>
-                : <HomeSummary {...homeTotals} months={monthsToPay} upcoming={upcomingPayments} cash={cash} expenses={expenses} msis={msis} commits={commits} onEditCash={()=>setCashModal(true)}/>}
+                : <HomeSummary {...homeTotals} months={monthsToPay} upcoming={upcomingPayments} cash={cash} income={income} expenses={expenses} msis={msis} commits={commits} onEditCash={()=>setCashModal(true)} onEditIncome={()=>setIncomeModal(true)}/>}
 
               {/* Respaldo de datos */}
               <div style={{margin:'4px 16px 20px',background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',padding:'15px 16px'}}>
@@ -1855,6 +2091,10 @@ function App() {
               </div>
               <CommitmentsScreen
                 commits={commits}
+                cards={cards}
+                expenses={expenses}
+                msis={msis}
+                payments={payments}
                 onEdit={c=>setCommitModal(c)}
                 onTogglePaid={toggleCommitPaid}
                 selMonth={selMonth}
@@ -1890,13 +2130,16 @@ function App() {
       {/* BOTTOM NAV */}
       <nav className="bottom-nav">
         <button className={`nav-btn ${tab==='home'?'active':''}`} onClick={()=>{setTab('home');setDetail(null);}}>
-          <span>Inicio</span>
+          <span className="nav-line"/>
+          <span className="nav-lbl">Inicio</span>
         </button>
         <button className={`nav-btn ${tab==='cards'?'active':''}`} onClick={()=>{setTab('cards');setDetail(null);}}>
-          <span>Tarjetas</span>
+          <span className="nav-line"/>
+          <span className="nav-lbl">Tarjetas</span>
         </button>
         <button className={`nav-btn ${tab==='commits'?'active':''}`} onClick={()=>{setTab('commits');setDetail(null);}}>
-          <span>Pagos</span>
+          <span className="nav-line"/>
+          <span className="nav-lbl">Pagos</span>
         </button>
       </nav>
 
@@ -1950,6 +2193,13 @@ function App() {
           onClose={()=>setCashModal(false)}
         />
       )}
+      {incomeModal && (
+        <IncomeForm
+          initial={income}
+          onSave={v=>setIncome(v)}
+          onClose={()=>setIncomeModal(false)}
+        />
+      )}
       {restoreData && (
         <Sheet title="Restaurar respaldo" onClose={()=>setRestoreData(null)}>
           <div className="sheet-body">
@@ -1979,4 +2229,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
-
