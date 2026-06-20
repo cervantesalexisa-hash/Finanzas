@@ -935,9 +935,11 @@ function MsiTab({ msis, onTogglePaid, onEdit }) {
             <div style={{display:'flex',gap:4}}>
               {months.map((m)=>{
                 const isPaid = paidKeys.includes(m.key);
+                const locked = isPaid; // ya pagada (confirmada) → no se desmarca con toque
                 return (
-                  <button key={m.num} onClick={()=>onTogglePaid(item.id,m.key)} title={`Cuota ${m.num}`}
-                    style={{flex:1,height:12,borderRadius:6,border:'none',cursor:'pointer',padding:0,
+                  <button key={m.num} onClick={locked?undefined:()=>onTogglePaid(item.id,m.key)}
+                    title={locked?`Cuota ${m.num} · pagada (bloqueada)`:`Cuota ${m.num} · toca para marcar pagada`}
+                    style={{flex:1,height:12,borderRadius:6,border:'none',cursor:locked?'default':'pointer',padding:0,
                       background: isPaid?'var(--green)':'rgba(47,128,237,.18)',
                       transition:'background .2s'}}/>
                 );
@@ -1389,6 +1391,63 @@ function CommitForm({ initial, onSave, onDelete, onClose }) {
   );
 }
 
+function IncomeEvtForm({ initial, onSave, onDelete, onClose }) {
+  const blank = { desc:'', amount:'', day:1, month:currentMonth, year:currentYear, repeat:120, receivedMonths:[] };
+  const [f, setF] = useState(initial ? {...initial, amount: initial.amount===0?'':initial.amount} : blank);
+  const set = k => e => setF(p=>({...p,[k]:e.target.value}));
+  const recurring = (parseInt(f.repeat)||1) > 1;
+  return (
+    <Sheet title={initial?'Editar Ingreso':'Nuevo Ingreso'} onClose={onClose}>
+      <div className="sheet-body">
+        <div style={{background:'rgba(47,128,237,.10)',borderRadius:'var(--radius-sm)',padding:'10px 14px',marginBottom:14,fontSize:13,color:'var(--text2)',lineHeight:1.4}}>
+          💵 Registra cuándo entra dinero (salario, negocio). Aparece en el calendario y lo marcas como recibido con el ✓.
+        </div>
+        <div className="field"><label>Descripción</label><input value={f.desc} onChange={set('desc')} placeholder="ej. Salario, Pago negocio…"/></div>
+        <div className="field"><label>Monto</label><input type="number" value={f.amount} onChange={set('amount')} placeholder="0.00" inputMode="decimal"/></div>
+        <div className="field-row">
+          <div className="field"><label>Día que entra</label><input type="number" min="1" max="31" value={f.day} onChange={set('day')} inputMode="numeric"/></div>
+          <div className="field"><label>¿Cada cuándo?</label>
+            <select value={recurring?'monthly':'once'} onChange={e=>setF(p=>({...p, repeat:e.target.value==='monthly'?120:1, month:e.target.value==='monthly'?p.month:currentMonth, year:e.target.value==='monthly'?p.year:currentYear}))}>
+              <option value="monthly">Cada mes</option>
+              <option value="once">Una vez</option>
+            </select>
+          </div>
+        </div>
+        {!recurring && (
+          <div className="field-row">
+            <div className="field"><label>Mes</label><select value={f.month} onChange={set('month')}>{MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}</select></div>
+            <div className="field"><label>Año</label><input type="number" min="2020" max="2035" value={f.year} onChange={set('year')}/></div>
+          </div>
+        )}
+      </div>
+      <div className="sheet-actions">
+        {initial && <button className="btn-danger" onClick={()=>{onDelete(initial.id);onClose();}}>Eliminar</button>}
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={()=>{if(f.desc){onSave(f);onClose();}}}>Guardar</button>
+      </div>
+    </Sheet>
+  );
+}
+
+function AddChooser({ onPick, onClose }) {
+  const opt = { width:'100%', textAlign:'left', background:'var(--bg)', border:'1px solid var(--sep)',
+    borderRadius:'var(--radius-sm)', padding:'15px 16px', cursor:'pointer', marginBottom:10 };
+  return (
+    <Sheet title="¿Qué quieres agregar?" onClose={onClose}>
+      <div className="sheet-body">
+        <button style={opt} onClick={()=>onPick('pago')}>
+          <div style={{fontSize:15.5,fontWeight:700,color:'var(--text)'}}>Pago fijo</div>
+          <div style={{fontSize:12.5,color:'var(--text3)',marginTop:2}}>Renta, suscripción, préstamo…</div>
+        </button>
+        <button style={{...opt,marginBottom:0}} onClick={()=>onPick('ingreso')}>
+          <div style={{fontSize:15.5,fontWeight:700,color:'var(--blue-mid)'}}>Ingreso</div>
+          <div style={{fontSize:12.5,color:'var(--text3)',marginTop:2}}>Salario, dinero del negocio…</div>
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
 // ─── PAYMENT FORM ─────────────────────────────────────────────────────────────
 function PaymentForm({ initial, onSave, onDelete, onClose }) {
   const blank = { amount:'', date:today.toISOString().slice(0,10), note:'' };
@@ -1519,8 +1578,8 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
     const top = arr.slice(0,6), rest = arr.slice(6);
     if (rest.length) {
       const otrosItems = rest.flatMap(d=>items[d.label]||[]);
-      top.push({ label:'➕ Otros', value: rest.reduce((a,d)=>a+d.value,0) });
-      items['➕ Otros'] = otrosItems;
+      top.push({ label:'➕ Otras categorías', value: rest.reduce((a,d)=>a+d.value,0) });
+      items['➕ Otras categorías'] = otrosItems;
     }
     return { catData: top.map((d,i)=>({ ...d, color: PALETTE[i%PALETTE.length] })), catItems: items };
   })();
@@ -1654,26 +1713,25 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
 }
 
 // ─── COMMITMENTS SCREEN ───────────────────────────────────────────────────────
-function CommitmentsScreen({ commits, cards, expenses, msis, payments, onEdit, onTogglePaid, selMonth, setSelMonth }) {
+function CommitmentsScreen({ commits, cards, expenses, msis, payments, incomes, onEdit, onEditIncome, onTogglePaid, onToggleReceived, selMonth, setSelMonth }) {
   const [selDay, setSelDay] = useState(null);
   const [y, mIdx] = selMonth.split('-').map(Number); // mIdx 0-based
   const daysInMonth = new Date(y, mIdx+1, 0).getDate();
   const offset = (new Date(y, mIdx, 1).getDay()+6)%7; // semana inicia lunes
   const isCurMonth = selMonth === monthKey(currentYear, currentMonth);
   const todayD = today.getDate();
-  const k = (y*12 + mIdx) - (currentYear*12 + currentMonth); // meses respecto a hoy
+  const k = (y*12 + mIdx) - (currentYear*12 + currentMonth);
 
   const fmtK = n => n>=1000 ? `$${(n/1000).toFixed(1)}k` : `$${Math.round(n)}`;
-
-  const activeCommits = commits.filter(c=>{
-    const sm = monthKey(parseInt(c.year),parseInt(c.month));
-    const months = parseInt(c.repeat)||1;
-    const endDate = new Date(parseInt(c.year),parseInt(c.month)+months-1,1);
-    const endMK = monthKey(endDate.getFullYear(),endDate.getMonth());
+  const activeIn = (sm, mths) => {
+    const endDate = new Date(parseInt(sm.split('-')[0]), parseInt(sm.split('-')[1])+(parseInt(mths)||1)-1, 1);
+    const endMK = monthKey(endDate.getFullYear(), endDate.getMonth());
     return sm<=selMonth && selMonth<=endMK;
-  });
+  };
 
-  // Monto real a pagar de una tarjeta en el mes mostrado (MSI + gastos que caen ese mes)
+  const activeCommits = commits.filter(c=> activeIn(monthKey(parseInt(c.year),parseInt(c.month)), c.repeat));
+  const activeIncomes = (incomes||[]).filter(c=> activeIn(monthKey(parseInt(c.year),parseInt(c.month)), c.repeat));
+
   function cardAmountForMonth(cd){
     let amt=0;
     (msis||[]).filter(m=>m.cardId===cd.id).forEach(m=>{
@@ -1691,7 +1749,7 @@ function CommitmentsScreen({ commits, cards, expenses, msis, payments, onEdit, o
     return amt;
   }
 
-  // Lo que se paga en el mes: pagos fijos + pago de cada tarjeta (con su monto real)
+  // Salidas: pagos fijos + pago de cada tarjeta
   const dues = [];
   activeCommits.forEach(c=>dues.push({
     day: Math.min(daysInMonth, parseInt(c.day)||1), kind:'commit', label:c.desc,
@@ -1702,15 +1760,24 @@ function CommitmentsScreen({ commits, cards, expenses, msis, payments, onEdit, o
     day: Math.min(daysInMonth, parseInt(cd.payDay)||1), kind:'card',
     label:`Pago ${cd.name||'tarjeta'}`, sub:'Día de pago', amount: cardAmountForMonth(cd), ref:cd,
   }));
+  // Entradas: ingresos
+  const ins = [];
+  activeIncomes.forEach(c=>ins.push({
+    day: Math.min(daysInMonth, parseInt(c.day)||1), kind:'income', label:c.desc,
+    sub:'Ingreso', amount:parseFloat(c.amount)||0,
+    received:(c.receivedMonths||[]).includes(selMonth), ref:c,
+  }));
 
-  // Monto por día (para mostrarlo en el calendario)
-  const dayAmt = {};
-  dues.forEach(d=>{ const v=(d.kind==='commit'&&d.paid)?0:(d.amount||0); dayAmt[d.day]=(dayAmt[d.day]||0)+v; });
-  const dueDays = new Set(dues.map(d=>d.day));
+  const dayPay = {}, dayInc = {};
+  dues.forEach(d=>{ const v=(d.kind==='commit'&&d.paid)?0:(d.amount||0); dayPay[d.day]=(dayPay[d.day]||0)+v; });
+  ins.forEach(d=>{ dayInc[d.day]=(dayInc[d.day]||0)+(d.amount||0); });
+  const activeDays = new Set([...dues.map(d=>d.day), ...ins.map(d=>d.day)]);
 
   const navMonth = delta => { const d=new Date(y, mIdx+delta, 1); setSelMonth(monthKey(d.getFullYear(), d.getMonth())); setSelDay(null); };
-  const shown = (selDay ? dues.filter(d=>d.day===selDay) : dues).slice().sort((a,b)=>a.day-b.day);
-  const monthTotal = dues.reduce((a,d)=> a + ((d.kind==='commit'&&d.paid)?0:(d.amount||0)), 0);
+  const all = [...dues, ...ins];
+  const shown = (selDay ? all.filter(d=>d.day===selDay) : all).slice().sort((a,b)=> a.day-b.day || (a.kind==='income'?1:-1));
+  const payTotal = dues.reduce((a,d)=> a + ((d.kind==='commit'&&d.paid)?0:(d.amount||0)), 0);
+  const incTotal = ins.reduce((a,d)=> a + (d.amount||0), 0);
 
   const cells=[]; for(let i=0;i<offset;i++)cells.push(null); for(let d=1;d<=daysInMonth;d++)cells.push(d);
   const iconBtn = { width:38,height:38,borderRadius:'50%',border:'1px solid var(--sep)',background:'var(--card)',
@@ -1731,8 +1798,8 @@ function CommitmentsScreen({ commits, cards, expenses, msis, payments, onEdit, o
         <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4}}>
           {cells.map((d,i)=>{
             if (d===null) return <div key={i}/>;
-            const has = dueDays.has(d);
-            const amt = dayAmt[d]||0;
+            const has = activeDays.has(d);
+            const p = dayPay[d]||0, inc = dayInc[d]||0;
             const isToday = isCurMonth && d===todayD;
             const isSel = selDay===d;
             return (
@@ -1741,54 +1808,72 @@ function CommitmentsScreen({ commits, cards, expenses, msis, payments, onEdit, o
                   cursor: has?'pointer':'default',
                   background: isSel?'var(--blue-mid)': isToday?'rgba(31,111,235,.12)':'transparent',
                   color: isSel?'#fff':'var(--text)',
-                  display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,
+                  display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:1,
                   fontSize:15, fontWeight:(isToday||isSel)?700:500, transition:'background .15s var(--ease-out)'}}>
                 <span>{d}</span>
-                {has && amt>0 && <span style={{fontSize:10.5,fontWeight:700,lineHeight:1,color:isSel?'rgba(255,255,255,.92)':'var(--blue-mid)'}}>{fmtK(amt)}</span>}
-                {has && amt===0 && <span style={{width:5,height:5,borderRadius:'50%',background:isSel?'#fff':'rgba(31,111,235,.45)'}}/>}
+                {p>0 && <span style={{fontSize:10,fontWeight:700,lineHeight:1.1,color:isSel?'rgba(255,255,255,.92)':'var(--blue-mid)'}}>{fmtK(p)}</span>}
+                {inc>0 && <span style={{fontSize:10,fontWeight:700,lineHeight:1.1,color:isSel?'rgba(255,255,255,.85)':'var(--orange)'}}>+{fmtK(inc)}</span>}
+                {has && p===0 && inc===0 && <span style={{width:5,height:5,borderRadius:'50%',background:isSel?'#fff':'rgba(31,111,235,.45)'}}/>}
               </button>
             );
           })}
         </div>
       </div>
 
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'20px 2px 10px'}}>
-        <div style={{fontSize:13,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:.4}}>{selDay?`Día ${selDay}`:'Pagos del mes'}</div>
+      <div style={{display:'flex',gap:18,alignItems:'center',justifyContent:'center',marginTop:11,fontSize:11.5,color:'var(--text3)'}}>
+        <span style={{display:'flex',alignItems:'center',gap:5}}><span style={{width:7,height:7,borderRadius:'50%',background:'var(--blue-mid)'}}/>Pago</span>
+        <span style={{display:'flex',alignItems:'center',gap:5}}><span style={{width:7,height:7,borderRadius:'50%',background:'var(--orange)'}}/>Ingreso</span>
+      </div>
+
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'18px 2px 10px'}}>
+        <div style={{fontSize:13,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:.4}}>{selDay?`Día ${selDay}`:'Movimientos del mes'}</div>
         {selDay && <button onClick={()=>setSelDay(null)} style={{fontSize:12.5,color:'var(--blue-mid)',background:'none',border:'none',cursor:'pointer',fontWeight:600}}>Ver todos</button>}
       </div>
 
       {shown.length===0
-        ? <div className="empty"><div className="icon">📅</div><p>{selDay?'Nada este día':'Sin pagos este mes'}</p></div>
+        ? <div className="empty"><div className="icon">📅</div><p>{selDay?'Nada este día':'Sin movimientos este mes'}</p></div>
         : <div style={{background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',overflow:'hidden'}}>
             {shown.map((it,idx)=>{
-              const urgent = isCurMonth && it.day>=todayD && (it.day-todayD)<=3 && (it.kind==='card'||!it.paid);
+              const isInc = it.kind==='income';
+              const done = isInc ? it.received : it.paid;
+              const urgent = !isInc && isCurMonth && it.day>=todayD && (it.day-todayD)<=3 && (it.kind==='card'||!it.paid);
+              const editable = it.kind==='commit' || isInc;
               return (
                 <div key={idx} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderTop:idx>0?'1px solid var(--sep)':'none'}}>
                   <div style={{width:42,height:42,borderRadius:13,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
-                    background: urgent?'var(--blue-mid)':'rgba(31,111,235,.10)'}}>
-                    <span style={{fontSize:15,fontWeight:700,color: urgent?'#fff':'var(--blue-mid)'}}>{it.day}</span>
+                    background: urgent?'var(--blue-mid)': isInc?'rgba(90,143,214,.16)':'rgba(31,111,235,.10)'}}>
+                    <span style={{fontSize:15,fontWeight:700,color: urgent?'#fff': isInc?'var(--orange)':'var(--blue-mid)'}}>{it.day}</span>
                   </div>
-                  <div style={{flex:1,minWidth:0,cursor:it.kind==='commit'?'pointer':'default'}}
-                    onClick={it.kind==='commit'?()=>onEdit(it.ref):undefined}>
-                    <div style={{fontSize:15,fontWeight:600,opacity:it.paid?.45:1,textDecoration:it.paid?'line-through':'none',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{it.label}</div>
+                  <div style={{flex:1,minWidth:0,cursor:editable?'pointer':'default'}}
+                    onClick={editable?()=> (isInc?onEditIncome(it.ref):onEdit(it.ref)) :undefined}>
+                    <div style={{fontSize:15,fontWeight:600,opacity:done?.45:1,textDecoration:done?'line-through':'none',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{it.label}</div>
                     <div style={{fontSize:12,color:'var(--text3)',marginTop:1}}>{it.sub}{urgent?' · vence pronto':''}</div>
                   </div>
-                  <span style={{fontSize:15,fontWeight:700,opacity:it.paid?.45:1}}>{fmt(it.amount||0)}</span>
-                  {it.kind==='commit'
-                    ? <CheckBtn checked={it.paid} onToggle={()=>onTogglePaid(it.ref.id, selMonth)}/>
-                    : <span style={{fontSize:10.5,color:'var(--text3)',border:'1px solid var(--sep)',borderRadius:6,padding:'2px 7px'}}>pago</span>}
+                  <span style={{fontSize:15,fontWeight:700,opacity:done?.45:1,color:isInc?'var(--orange)':'var(--text)'}}>{isInc?'+':''}{fmt(it.amount||0)}</span>
+                  {isInc
+                    ? <CheckBtn checked={it.received} onToggle={()=>onToggleReceived(it.ref.id, selMonth)}/>
+                    : it.kind==='commit'
+                      ? <CheckBtn checked={it.paid} onToggle={()=>onTogglePaid(it.ref.id, selMonth)}/>
+                      : <span style={{fontSize:10.5,color:'var(--text3)',border:'1px solid var(--sep)',borderRadius:6,padding:'2px 7px'}}>pago</span>}
                 </div>
               );
             })}
           </div>}
 
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:16,padding:'14px 16px',
-        background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)'}}>
-        <span style={{fontSize:14,fontWeight:600,color:'var(--text2)'}}>Total a pagar este mes</span>
-        <strong style={{fontSize:18,color:'var(--blue-mid)',letterSpacing:-.3}}>{fmt(monthTotal)}</strong>
+      <div style={{marginTop:16,background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',overflow:'hidden'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 16px'}}>
+          <span style={{fontSize:14,fontWeight:600,color:'var(--text2)'}}>Total a pagar este mes</span>
+          <strong style={{fontSize:18,color:'var(--blue-mid)',letterSpacing:-.3}}>{fmt(payTotal)}</strong>
+        </div>
+        {incTotal>0 && (
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 16px',borderTop:'1px solid var(--sep)'}}>
+            <span style={{fontSize:14,fontWeight:600,color:'var(--text2)'}}>Ingresos del mes</span>
+            <strong style={{fontSize:18,color:'var(--orange)',letterSpacing:-.3}}>+{fmt(incTotal)}</strong>
+          </div>
+        )}
       </div>
       <div style={{fontSize:11.5,color:'var(--text3)',marginTop:10,padding:'0 4px',lineHeight:1.4}}>
-        Toca un pago fijo para editarlo · el ✓ lo marca como pagado · toca + arriba para agregar uno.
+        Toca un pago o ingreso para editarlo · el ✓ marca pagado / recibido · toca + arriba para agregar.
       </div>
     </div>
   );
@@ -1803,6 +1888,7 @@ function App() {
   const [msis, setMsis]         = useStorage('fp_msis', []);
   const [payments, setPayments] = useStorage('fp_payments', []);
   const [commits, setCommits]   = useStorage('fp_commits', []);
+  const [incomes, setIncomes]   = useStorage('fp_incomes', []);
   const [cash, setCash]         = useStorage('fp_cash', '');
   const [income, setIncome]     = useStorage('fp_income', '');
 
@@ -1811,6 +1897,8 @@ function App() {
   const [msiModal,    setMsiModal]    = useState(null);
   const [payModal,    setPayModal]    = useState(null);
   const [commitModal, setCommitModal] = useState(null);
+  const [incomeEvtModal, setIncomeEvtModal] = useState(null);
+  const [addChooser,  setAddChooser]  = useState(false);
   const [cashModal,   setCashModal]   = useState(false);
   const [incomeModal, setIncomeModal] = useState(false);
   const [selMonth,    setSelMonth]    = useState(currentMK);
@@ -1871,10 +1959,22 @@ function App() {
     return {...x,paidMonths:pm.includes(mk)?pm.filter(k=>k!==mk):[...pm,mk]};
   }));
 
+  // ── Incomes (ingresos) CRUD ──
+  const saveIncome2 = f => {
+    if(f.id) setIncomes(p=>p.map(x=>x.id===f.id?{...f}:x));
+    else setIncomes(p=>[...p,{...f,id:uid(),receivedMonths:[]}]);
+  };
+  const deleteIncome2 = id => { setIncomes(p=>p.filter(x=>x.id!==id)); setIncomeEvtModal(null); };
+  const toggleIncomeReceived = (id,mk) => setIncomes(p=>p.map(x=>{
+    if(x.id!==id) return x;
+    const rm=x.receivedMonths||[];
+    return {...x,receivedMonths:rm.includes(mk)?rm.filter(k=>k!==mk):[...rm,mk]};
+  }));
+
   // ── FAB — only for list screens ──
   const handleFab = () => {
     if (tab==='cards') setCardModal('new');
-    else setCommitModal('new');
+    else setAddChooser(true);
   };
 
   const showDetail = detailCard !== null;
@@ -1987,7 +2087,7 @@ function App() {
   const dueSoonCount = upcomingPayments.filter(p=>p.days<=3).length;
 
   // ── Respaldo de datos ──
-  const BK_KEYS = ['fp_cards','fp_expenses','fp_msis','fp_payments','fp_commits','fp_cash','fp_income'];
+  const BK_KEYS = ['fp_cards','fp_expenses','fp_msis','fp_payments','fp_commits','fp_incomes','fp_cash','fp_income'];
   const [restoreData, setRestoreData] = useState(null); // datos en espera de confirmación
   const [bkMsg, setBkMsg] = useState('');
   const exportData = () => {
@@ -2024,6 +2124,7 @@ function App() {
     if ('fp_msis'     in data) setMsis(pv(data.fp_msis, []));
     if ('fp_payments' in data) setPayments(pv(data.fp_payments, []));
     if ('fp_commits'  in data) setCommits(pv(data.fp_commits, []));
+    if ('fp_incomes'  in data) setIncomes(pv(data.fp_incomes, []));
     if ('fp_cash'     in data) setCash(pv(data.fp_cash, ''));
     if ('fp_income'   in data) setIncome(pv(data.fp_income, ''));
     setRestoreData(null);
@@ -2098,7 +2199,7 @@ function App() {
                   <div className="screen-title">Pagos</div>
                   <div className="screen-sub">Pagos mensuales y únicos</div>
                 </div>
-                <button onClick={()=>setCommitModal('new')} aria-label="Agregar pago" className="head-add"><IconPlus/></button>
+                <button onClick={()=>setAddChooser(true)} aria-label="Agregar" className="head-add"><IconPlus/></button>
               </div>
               <CommitmentsScreen
                 commits={commits}
@@ -2106,8 +2207,11 @@ function App() {
                 expenses={expenses}
                 msis={msis}
                 payments={payments}
+                incomes={incomes}
                 onEdit={c=>setCommitModal(c)}
+                onEditIncome={i=>setIncomeEvtModal(i)}
                 onTogglePaid={toggleCommitPaid}
+                onToggleReceived={toggleIncomeReceived}
                 selMonth={selMonth}
                 setSelMonth={setSelMonth}
               />
@@ -2197,6 +2301,20 @@ function App() {
           onClose={()=>setCommitModal(null)}
         />
       )}
+      {addChooser && (
+        <AddChooser
+          onClose={()=>setAddChooser(false)}
+          onPick={t=>{ setAddChooser(false); if(t==='pago') setCommitModal('new'); else setIncomeEvtModal('new'); }}
+        />
+      )}
+      {incomeEvtModal && (
+        <IncomeEvtForm
+          initial={incomeEvtModal==='new'?null:incomeEvtModal}
+          onSave={saveIncome2}
+          onDelete={deleteIncome2}
+          onClose={()=>setIncomeEvtModal(null)}
+        />
+      )}
       {cashModal && (
         <CashForm
           initial={cash}
@@ -2240,4 +2358,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
-
