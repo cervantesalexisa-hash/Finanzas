@@ -394,20 +394,35 @@
   .color-dot.selected { border-color: var(--text); transform: scale(1.15); }
 
   /* GRADIENTS */
-  .grad-yellow  { background: linear-gradient(145deg, #e8b332, #cf9a1e); }
-  .grad-red     { background: linear-gradient(145deg, #e53935, #c1272d); }
-  .grad-blue    { background: linear-gradient(145deg, #1f82dd, #1257a0); }
-  .grad-skyblue { background: linear-gradient(145deg, #039be5, #0379b0); }
-  .grad-purple  { background: linear-gradient(145deg, #ab47bc, #8b3a9c); }
-  .grad-orange  { background: linear-gradient(145deg, #f4511e, #cc3f12); }
-  .grad-green   { background: linear-gradient(145deg, #3a9540, #29702d); }
-  .grad-black    { background: linear-gradient(145deg, #3a3a3f, #141417); }
-  .grad-graphite { background: linear-gradient(145deg, #5b6573, #313842); }
-  .grad-teal     { background: linear-gradient(145deg, #16b9a6, #0c7a6e); }
-  .grad-pink     { background: linear-gradient(145deg, #ec4899, #b81d6e); }
-  .grad-indigo   { background: linear-gradient(145deg, #4254c5, #28307e); }
-  .grad-gold     { background: linear-gradient(145deg, #caa14e, #93702a); }
-  .grad-wine     { background: linear-gradient(145deg, #9b2742, #5f1628); }
+  .grad-blue     { background: linear-gradient(145deg, #3b82f6, #1e51c9); }
+  .grad-navy     { background: linear-gradient(145deg, #234da6, #0c1f57); }
+  .grad-skyblue  { background: linear-gradient(145deg, #38a8ec, #1670c0); }
+  .grad-cyan     { background: linear-gradient(145deg, #1fb6cf, #0e7a9c); }
+  .grad-teal     { background: linear-gradient(145deg, #16a99b, #0c6e72); }
+  .grad-indigo   { background: linear-gradient(145deg, #5560e0, #2f2f9e); }
+  .grad-purple   { background: linear-gradient(145deg, #7a5cd6, #4a2da0); }
+  .grad-steel    { background: linear-gradient(145deg, #6286b0, #3a567f); }
+  .grad-graphite { background: linear-gradient(145deg, #4a5570, #2a3146); }
+  .grad-black    { background: linear-gradient(145deg, #2b3753, #141a2c); }
+  /* (tonos cálidos retirados de la paleta; se conservan por compatibilidad) */
+  .grad-yellow  { background: linear-gradient(145deg, #3b82f6, #1e51c9); }
+  .grad-red     { background: linear-gradient(145deg, #3b82f6, #1e51c9); }
+  .grad-orange  { background: linear-gradient(145deg, #3b82f6, #1e51c9); }
+  .grad-green   { background: linear-gradient(145deg, #16a99b, #0c6e72); }
+  .grad-pink    { background: linear-gradient(145deg, #7a5cd6, #4a2da0); }
+  .grad-gold    { background: linear-gradient(145deg, #6286b0, #3a567f); }
+  .grad-wine    { background: linear-gradient(145deg, #234da6, #0c1f57); }
+
+  /* DASHBOARD INICIO */
+  .home-grid { display:flex; flex-direction:column; gap:12px; margin:2px 16px 18px; }
+  .dash-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; animation:fadeUp .3s ease both; }
+  .dash-stat { flex:1; }
+  @media (min-width:900px){
+    .home-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; grid-auto-flow:dense; align-items:start; margin:2px 0 24px; }
+    .dash-stats, .dash-donut, .dash-months { grid-column:1 / -1; }
+    .dash-card { padding:20px 22px; transition:box-shadow .2s var(--ease-out); }
+    .dash-stats .dash-stat div:first-child { font-size:24px; }
+  }
 
   /* COMMITMENTS */
   .month-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 12px 16px; scrollbar-width: none; }
@@ -438,20 +453,16 @@ const { useState, useEffect, useCallback, useMemo } = React;
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
 const COLORS = [
-  { id:'yellow',  cls:'grad-yellow',  hex:'#e8b332' },
-  { id:'red',     cls:'grad-red',     hex:'#e53935' },
-  { id:'blue',    cls:'grad-blue',    hex:'#1976d2' },
-  { id:'skyblue', cls:'grad-skyblue', hex:'#039be5' },
-  { id:'purple',  cls:'grad-purple',  hex:'#ab47bc' },
-  { id:'orange',  cls:'grad-orange',  hex:'#f4511e' },
-  { id:'green',   cls:'grad-green',   hex:'#388e3c' },
-  { id:'black',    cls:'grad-black',    hex:'#2b2b2e' },
-  { id:'graphite', cls:'grad-graphite', hex:'#576070' },
-  { id:'teal',     cls:'grad-teal',     hex:'#14b8a6' },
-  { id:'pink',     cls:'grad-pink',     hex:'#ec4899' },
-  { id:'indigo',   cls:'grad-indigo',   hex:'#3f51b5' },
-  { id:'gold',     cls:'grad-gold',     hex:'#c2993f' },
-  { id:'wine',     cls:'grad-wine',     hex:'#8e2436' },
+  { id:'blue',     cls:'grad-blue',     hex:'#3b82f6' },
+  { id:'navy',     cls:'grad-navy',     hex:'#234da6' },
+  { id:'skyblue',  cls:'grad-skyblue',  hex:'#38a8ec' },
+  { id:'cyan',     cls:'grad-cyan',     hex:'#1fb6cf' },
+  { id:'teal',     cls:'grad-teal',     hex:'#16a99b' },
+  { id:'indigo',   cls:'grad-indigo',   hex:'#5560e0' },
+  { id:'purple',   cls:'grad-purple',   hex:'#7a5cd6' },
+  { id:'steel',    cls:'grad-steel',    hex:'#6286b0' },
+  { id:'graphite', cls:'grad-graphite', hex:'#4a5570' },
+  { id:'black',    cls:'grad-black',    hex:'#2b3753' },
 ];
 
 const CATS = [
@@ -761,7 +772,7 @@ function cardMonthsToPay(card, expenses, msis) {
 }
 
 function CardListItem({ card, expenses, msis, payments, onClick }) {
-  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[2];
+  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[0];
   const { totalToPay, thisCycle } = computeCardTotals(card, expenses, msis, payments);
   return (
     <div onClick={onClick} className={`card-flat ${colorInfo.cls}`}>
@@ -1026,7 +1037,7 @@ function CardDetail({ card, expenses, msis, payments, onBack, onEditCard,
     onToggleMsiPaid, onEditMsi, onAddMsi,
     onEditPayment, onAddPayment }) {
   const [activeTab, setActiveTab] = useState('gastos');
-  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[2];
+  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[0];
   const { realAvail, usedPct, totalToPay, cutDays, payDays, totalCredit, extension, thisCycle } = computeCardTotals(card, expenses, msis, payments);
   // A pagar por mes (este mes + próximos 2), gastos + MSI
   const nextMonths = cardMonthsToPay(card, expenses, msis);
@@ -1361,6 +1372,8 @@ function CommitForm({ initial, onSave, onDelete, onClose }) {
   const blank = { desc:'', amount:'', cat:CATS[8], day:1, month:currentMonth, year:currentYear, repeat:1, paidMonths:[] };
   const [f, setF] = useState(initial ? {...initial, amount: initial.amount===0?'':initial.amount} : blank);
   const set = k => e => setF(p=>({...p,[k]:e.target.value}));
+  const dateVal = `${f.year||currentYear}-${String((parseInt(f.month)||0)+1).padStart(2,'0')}-${String(parseInt(f.day)||1).padStart(2,'0')}`;
+  const setDate = e => { if(!e.target.value) return; const [Y,M,D]=e.target.value.split('-').map(Number); setF(p=>({...p, year:Y, month:M-1, day:D})); };
   return (
     <Sheet title={initial?'Editar Pago':'Nuevo Pago'} onClose={onClose}>
       <div className="sheet-body">
@@ -1370,15 +1383,7 @@ function CommitForm({ initial, onSave, onDelete, onClose }) {
           <select value={f.cat} onChange={set('cat')}>{CATS.map(c=><option key={c}>{c}</option>)}</select>
         </div>
         <div className="field-row">
-          <div className="field"><label>Día de cobro</label><input type="number" min="1" max="31" value={f.day} onChange={set('day')} placeholder="1" inputMode="numeric"/></div>
-          <div className="field"><label>Mes Inicio</label>
-            <select value={f.month} onChange={set('month')}>
-              {MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="field-row">
-          <div className="field"><label>Año</label><input type="number" min="2020" max="2035" value={f.year} onChange={set('year')}/></div>
+          <div className="field"><label>Fecha de cobro</label><input type="date" value={dateVal} onChange={setDate}/></div>
           <div className="field"><label>Repetir (meses)</label><input type="number" min="1" max="120" value={f.repeat} onChange={set('repeat')}/></div>
         </div>
       </div>
@@ -1396,6 +1401,8 @@ function IncomeEvtForm({ initial, onSave, onDelete, onClose }) {
   const [f, setF] = useState(initial ? {...initial, amount: initial.amount===0?'':initial.amount} : blank);
   const set = k => e => setF(p=>({...p,[k]:e.target.value}));
   const recurring = (parseInt(f.repeat)||1) > 1;
+  const dateVal = `${f.year||currentYear}-${String((parseInt(f.month)||0)+1).padStart(2,'0')}-${String(parseInt(f.day)||1).padStart(2,'0')}`;
+  const setDate = e => { if(!e.target.value) return; const [Y,M,D]=e.target.value.split('-').map(Number); setF(p=>({...p, year:Y, month:M-1, day:D})); };
   return (
     <Sheet title={initial?'Editar Ingreso':'Nuevo Ingreso'} onClose={onClose}>
       <div className="sheet-body">
@@ -1405,20 +1412,14 @@ function IncomeEvtForm({ initial, onSave, onDelete, onClose }) {
         <div className="field"><label>Descripción</label><input value={f.desc} onChange={set('desc')} placeholder="ej. Salario, Pago negocio…"/></div>
         <div className="field"><label>Monto</label><input type="number" value={f.amount} onChange={set('amount')} placeholder="0.00" inputMode="decimal"/></div>
         <div className="field-row">
-          <div className="field"><label>Día que entra</label><input type="number" min="1" max="31" value={f.day} onChange={set('day')} inputMode="numeric"/></div>
+          <div className="field"><label>Fecha que entra</label><input type="date" value={dateVal} onChange={setDate}/></div>
           <div className="field"><label>¿Cada cuándo?</label>
-            <select value={recurring?'monthly':'once'} onChange={e=>setF(p=>({...p, repeat:e.target.value==='monthly'?120:1, month:e.target.value==='monthly'?p.month:currentMonth, year:e.target.value==='monthly'?p.year:currentYear}))}>
+            <select value={recurring?'monthly':'once'} onChange={e=>setF(p=>({...p, repeat:e.target.value==='monthly'?120:1}))}>
               <option value="monthly">Cada mes</option>
               <option value="once">Una vez</option>
             </select>
           </div>
         </div>
-        {!recurring && (
-          <div className="field-row">
-            <div className="field"><label>Mes</label><select value={f.month} onChange={set('month')}>{MONTHS.map((m,i)=><option key={i} value={i}>{m}</option>)}</select></div>
-            <div className="field"><label>Año</label><input type="number" min="2020" max="2035" value={f.year} onChange={set('year')}/></div>
-          </div>
-        )}
       </div>
       <div className="sheet-actions">
         {initial && <button className="btn-danger" onClick={()=>{onDelete(initial.id);onClose();}}>Eliminar</button>}
@@ -1584,17 +1585,11 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
     return { catData: top.map((d,i)=>({ ...d, color: PALETTE[i%PALETTE.length] })), catItems: items };
   })();
   const catTotal = catData.reduce((a,d)=>a+d.value,0);
-  return (
-    <div style={{
-      margin:'2px 16px 18px',
-      borderRadius:'var(--radius)',
-      background:'var(--card)',
-      boxShadow:'var(--shadow)',
-      padding:'16px 18px 14px',
-      animation:'fadeUp .3s ease both',
-    }}>
-      {/* Dinero disponible (lo que tengo para pagar) */}
-      <div onClick={onEditCash} style={{cursor:'pointer'}}>
+    return (
+    <div className="home-grid">
+
+      {/* Dinero disponible */}
+      <section className="dash-card dash-cash" onClick={onEditCash} style={{cursor:'pointer'}}>
         <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6}}>Dinero disponible</div>
         {cashVal>0
           ? <>
@@ -1604,27 +1599,29 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
               </div>
             </>
           : <div style={{fontSize:15,color:'var(--blue-mid)',marginTop:4}}>Toca para poner cuánto dinero tienes</div>}
-      </div>
+      </section>
 
-      {/* Este mes (lo más importante) · Deuda total · Por semana */}
-      <div style={{display:'flex',gap:18,marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
-        <div style={{flex:1}}>
-          <div style={{fontSize:20,fontWeight:700,letterSpacing:-.4}}>{fmt(thisMonth)}</div>
-          <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Este mes</div>
+      {/* Métricas */}
+      <section className="dash-card dash-stats">
+        <div style={{display:'flex',gap:18}}>
+          <div className="dash-stat">
+            <div style={{fontSize:20,fontWeight:700,letterSpacing:-.4}}>{fmt(thisMonth)}</div>
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Este mes</div>
+          </div>
+          <div className="dash-stat">
+            <div style={{fontSize:18,fontWeight:600,letterSpacing:-.3}}>{fmt(grandTotal)}</div>
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Deuda total</div>
+          </div>
+          <div className="dash-stat">
+            <div style={{fontSize:18,fontWeight:600,letterSpacing:-.3,color:'var(--blue)'}}>{fmt(weekly)}</div>
+            <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Por semana</div>
+          </div>
         </div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:18,fontWeight:600,letterSpacing:-.3}}>{fmt(grandTotal)}</div>
-          <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Deuda total</div>
-        </div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:18,fontWeight:600,letterSpacing:-.3,color:'var(--blue)'}}>{fmt(weekly)}</div>
-          <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Por semana</div>
-        </div>
-      </div>
+      </section>
 
       {/* Gastos por categoría (dona) */}
       {catTotal>0 && (
-        <div style={{marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
+        <section className="dash-card dash-donut">
           <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:10}}>Gastos por categoría · toca para ver detalle</div>
           <div style={{display:'flex',alignItems:'center',gap:16}}>
             <div style={{position:'relative',width:128,height:128,flexShrink:0}}>
@@ -1646,7 +1643,6 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
               ))}
             </div>
           </div>
-          {/* Desglose de la categoría tocada */}
           {selCat && catItems[selCat] && (
             <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid var(--sep)'}}>
               <div style={{fontSize:12.5,fontWeight:700,color:'var(--text)',marginBottom:8}}>{selCat}</div>
@@ -1658,19 +1654,15 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
               ))}
             </div>
           )}
-        </div>
+        </section>
       )}
 
       {/* Próximos pagos */}
-      <div style={{marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
+      <section className="dash-card dash-upcoming">
         <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:upcoming&&upcoming.length?6:4}}>Próximos pagos</div>
         {upcoming && upcoming.length>0
           ? upcoming.map((p,i)=>(
-              <div key={p.id} style={{
-                display:'flex',alignItems:'center',gap:10,
-                padding:'8px 0',
-                borderTop: i>0 ? '1px solid var(--sep)' : 'none',
-              }}>
+              <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderTop: i>0 ? '1px solid var(--sep)' : 'none'}}>
                 {p.isCommit
                   ? <span style={{width:18,textAlign:'center',fontSize:15,flexShrink:0}}>{p.emoji}</span>
                   : <span style={{width:9,height:9,borderRadius:'50%',background:p.hex,flexShrink:0}}/>}
@@ -1687,17 +1679,14 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
               </div>
             ))
           : <div style={{fontSize:13,color:'var(--text3)',padding:'2px 0 4px'}}>Sin pagos próximos</div>}
-      </div>
+      </section>
 
+      {/* A pagar por mes */}
       {months && months.length>0 && (
-        <div style={{marginTop:14,paddingTop:13,borderTop:'1px solid var(--sep)'}}>
+        <section className="dash-card dash-months">
           <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:4}}>A pagar por mes · todas</div>
           {months.map((m,i)=>(
-            <div key={m.mk} style={{
-              display:'flex',justifyContent:'space-between',alignItems:'center',
-              padding:'8px 0',
-              borderTop: i>0 ? '1px solid var(--sep)' : 'none',
-            }}>
+            <div key={m.mk} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderTop: i>0 ? '1px solid var(--sep)' : 'none'}}>
               <span style={{fontSize:14,color:'var(--text)'}}>
                 {m.label}{m.year!==currentYear ? ` '${String(m.year).slice(2)}` : ''}
               </span>
@@ -1706,8 +1695,9 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
               </span>
             </div>
           ))}
-        </div>
+        </section>
       )}
+
     </div>
   );
 }
@@ -2057,7 +2047,7 @@ function App() {
         const date = dd >= today.getDate()
           ? new Date(currentYear, currentMonth, dd)
           : new Date(currentYear, currentMonth+1, dd);
-        const ci = COLORS.find(x=>x.id===c.color)||COLORS[2];
+        const ci = COLORS.find(x=>x.id===c.color)||COLORS[0];
         list.push({ id:c.id, name:c.name||'Sin nombre', hex:ci.hex, amount:t.thisCycle, days, date });
       }
     });
@@ -2358,3 +2348,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
+
