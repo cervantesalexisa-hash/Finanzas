@@ -62,7 +62,7 @@
     font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', BlinkMacSystemFont, system-ui, sans-serif;
     background: var(--bg); color: var(--text); overscroll-behavior: none;
   }
-  #root { display: flex; flex-direction: column; max-width: 430px; margin: 0 auto; position: relative; }
+  #root { display: flex; flex-direction: column; max-width: 100%; margin: 0; position: relative; }
 
   /* SCREEN STACK */
   .app-stack { position: relative; flex: 1; overflow: hidden; }
@@ -120,7 +120,11 @@
   .nav-btn.active .nav-lbl { font-weight: 700; }
 
   /* ===== LAYOUT PC ===== */
-  .app-root { display: flex; flex-direction: column; height: 100%; }
+  .app-root { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 430px; margin: 0 auto; }
+  .nav-brand { display: none; align-items: center; font-size: 17px; font-weight: 700; letter-spacing: -.3px; color: var(--text); padding-right: 22px; gap: 9px; }
+  .nav-brand::before { content: ''; width: 24px; height: 24px; border-radius: 8px; background: linear-gradient(145deg,#3f86ff,#1f47c0); box-shadow: inset 0 1px 0 rgba(255,255,255,.3); }
+  .view-toggle { position: fixed; top: 11px; right: 13px; z-index: 200; background: var(--card); border: 1px solid var(--sep); border-radius: 20px; padding: 7px 15px; font-size: 12.5px; font-weight: 600; color: var(--blue-mid); box-shadow: var(--shadow-md); cursor: pointer; }
+  .view-toggle:active { transform: scale(.96); }
   .side { display: none; }
   .side-brand {
     display: flex; align-items: center; gap: 10px;
@@ -149,35 +153,36 @@
     content: ''; position: absolute; left: 3px; top: 50%; transform: translateY(-50%);
     width: 3px; height: 18px; border-radius: 2px; background: var(--blue-mid);
   }
-  @media (min-width: 900px) {
-    html, body, #root { overflow: hidden; }
-    body { background: #eceef2; }
-    #root { max-width: 100%; }
-    .app-root { flex-direction: row; }
-    .side {
-      display: flex; flex-direction: column; gap: 2px;
-      width: 264px; flex-shrink: 0; height: 100%;
-      border-right: 1px solid rgba(16,32,64,.07); padding: 30px 14px;
-      background: rgba(255,255,255,.72);
-      backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
-    }
-    .app-stack { flex: 1; width: 100%; background: var(--bg); }
-    .bottom-nav { display: none; }
-    .screen-view {
-      padding-left: max(36px, calc((100% - 772px) / 2));
-      padding-right: max(36px, calc((100% - 772px) / 2));
-      padding-bottom: 60px;
-    }
-    .screen-header { padding: 46px 16px 16px; }
-    .screen-title { font-size: 30px; letter-spacing: -.6px; }
-    .detail-header { padding: 38px 16px 14px; }
-    .card-list-item {
-      border: 1px solid rgba(16,32,64,.06);
-      box-shadow: var(--shadow-md);
-      transition: transform .22s var(--ease-out), box-shadow .22s var(--ease-out);
-    }
-    .card-list-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  /* ===== MODO PC (manual, clase .as-pc) ===== */
+  .app-root.as-pc { flex-direction: column; max-width: 100%; margin: 0; background: #eceef2; }
+  .app-root.as-pc .side { display: none; }
+  .app-root.as-pc .app-stack { flex: 1; width: 100%; background: var(--bg); }
+  /* Navegación arriba, a todo el ancho */
+  .app-root.as-pc .bottom-nav {
+    position: fixed; top: 0; bottom: auto; left: 0; right: 0;
+    width: 100%; max-width: 100%; transform: none;
+    height: 58px; padding: 0 30px; padding-bottom: 0;
+    border-top: none; border-bottom: 1px solid var(--sep);
+    align-items: center; justify-content: flex-start; gap: 6px;
   }
+  .app-root.as-pc .nav-brand { display: flex; }
+  .app-root.as-pc .nav-btn { flex: 0 0 auto; flex-direction: row; height: 38px; padding: 0 18px; border-radius: 10px; gap: 0; }
+  .app-root.as-pc .nav-line { display: none; }
+  .app-root.as-pc .nav-btn.active { background: rgba(31,111,235,.10); }
+  .app-root.as-pc .screen-view { padding: 80px 30px 60px; }
+  .app-root.as-pc .screen-header { padding: 16px 2px 18px; }
+  .app-root.as-pc .screen-title { font-size: 32px; letter-spacing: -.6px; }
+  .app-root.as-pc .detail-header { padding: 12px 2px 14px; }
+  /* Inicio a todo el ancho: paneles blancos en cuadrícula */
+  .app-root.as-pc .home-card {
+    background: transparent; box-shadow: none; border-radius: 0; margin: 0; overflow: visible;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start;
+  }
+  .app-root.as-pc .hs-section { background: var(--card); border-radius: 16px; box-shadow: var(--shadow); padding: 22px 26px; border-top: none; }
+  .app-root.as-pc .hs-section + .hs-section { border-top: none; }
+  .app-root.as-pc .hs-full { grid-column: 1 / -1; }
+  .app-root.as-pc .hs-metric-num { font-size: 26px; }
+  .app-root.as-pc .card-list-item { border: 1px solid rgba(16,32,64,.06); box-shadow: var(--shadow-md); }
   @media (hover: hover) and (pointer: fine) {
     .btn-primary, .btn-secondary, .head-add { transition: transform .14s var(--ease-out), filter .14s var(--ease-out), background .15s var(--ease-out); }
     .btn-primary:hover, .head-add:hover { filter: brightness(1.06); }
@@ -394,35 +399,35 @@
   .color-dot.selected { border-color: var(--text); transform: scale(1.15); }
 
   /* GRADIENTS */
-  .grad-blue     { background: linear-gradient(145deg, #3b82f6, #1e51c9); }
-  .grad-navy     { background: linear-gradient(145deg, #234da6, #0c1f57); }
-  .grad-skyblue  { background: linear-gradient(145deg, #38a8ec, #1670c0); }
-  .grad-cyan     { background: linear-gradient(145deg, #1fb6cf, #0e7a9c); }
-  .grad-teal     { background: linear-gradient(145deg, #16a99b, #0c6e72); }
-  .grad-indigo   { background: linear-gradient(145deg, #5560e0, #2f2f9e); }
-  .grad-purple   { background: linear-gradient(145deg, #7a5cd6, #4a2da0); }
-  .grad-steel    { background: linear-gradient(145deg, #6286b0, #3a567f); }
-  .grad-graphite { background: linear-gradient(145deg, #4a5570, #2a3146); }
-  .grad-black    { background: linear-gradient(145deg, #2b3753, #141a2c); }
+  .grad-blue     { background: linear-gradient(135deg, #6aa6ff 0%, #3b7af0 45%, #2356c4 100%); }
+  .grad-navy     { background: linear-gradient(135deg, #4f74c8 0%, #294f9e 48%, #122f6b 100%); }
+  .grad-skyblue  { background: linear-gradient(135deg, #74cdf7 0%, #38a3e6 48%, #1d76bf 100%); }
+  .grad-cyan     { background: linear-gradient(135deg, #66d8e8 0%, #25b1c8 48%, #117e98 100%); }
+  .grad-teal     { background: linear-gradient(135deg, #5fd1c2 0%, #1ea99a 48%, #0e7068 100%); }
+  .grad-indigo   { background: linear-gradient(135deg, #8d92f2 0%, #5a5fe0 45%, #3535ab 100%); }
+  .grad-purple   { background: linear-gradient(135deg, #ad93ec 0%, #7a5cd6 45%, #4f33ab 100%); }
+  .grad-steel    { background: linear-gradient(135deg, #9bb5d6 0%, #6286b0 48%, #41608a 100%); }
+  .grad-graphite { background: linear-gradient(135deg, #7a86a0 0%, #4d5872 48%, #2c344a 100%); }
+  .grad-black    { background: linear-gradient(135deg, #4a5878 0%, #2b3753 50%, #141a2c 100%); }
   /* (tonos cálidos retirados de la paleta; se conservan por compatibilidad) */
-  .grad-yellow  { background: linear-gradient(145deg, #3b82f6, #1e51c9); }
-  .grad-red     { background: linear-gradient(145deg, #3b82f6, #1e51c9); }
-  .grad-orange  { background: linear-gradient(145deg, #3b82f6, #1e51c9); }
-  .grad-green   { background: linear-gradient(145deg, #16a99b, #0c6e72); }
-  .grad-pink    { background: linear-gradient(145deg, #7a5cd6, #4a2da0); }
-  .grad-gold    { background: linear-gradient(145deg, #6286b0, #3a567f); }
-  .grad-wine    { background: linear-gradient(145deg, #234da6, #0c1f57); }
+  .grad-yellow  { background: linear-gradient(135deg, #6aa6ff 0%, #3b7af0 45%, #2356c4 100%); }
+  .grad-red     { background: linear-gradient(135deg, #6aa6ff 0%, #3b7af0 45%, #2356c4 100%); }
+  .grad-orange  { background: linear-gradient(135deg, #6aa6ff 0%, #3b7af0 45%, #2356c4 100%); }
+  .grad-green   { background: linear-gradient(135deg, #5fd1c2 0%, #1ea99a 48%, #0e7068 100%); }
+  .grad-pink    { background: linear-gradient(135deg, #ad93ec 0%, #7a5cd6 45%, #4f33ab 100%); }
+  .grad-gold    { background: linear-gradient(135deg, #9bb5d6 0%, #6286b0 48%, #41608a 100%); }
+  .grad-wine    { background: linear-gradient(135deg, #4f74c8 0%, #294f9e 48%, #122f6b 100%); }
 
-  /* DASHBOARD INICIO */
-  .home-grid { display:flex; flex-direction:column; gap:12px; margin:2px 16px 18px; }
-  .dash-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; animation:fadeUp .3s ease both; }
-  .dash-stat { flex:1; }
-  @media (min-width:900px){
-    .home-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; grid-auto-flow:dense; align-items:start; margin:2px 0 24px; }
-    .dash-stats, .dash-donut, .dash-months { grid-column:1 / -1; }
-    .dash-card { padding:20px 22px; transition:box-shadow .2s var(--ease-out); }
-    .dash-stats .dash-stat div:first-child { font-size:24px; }
-  }
+  /* INICIO (limpio) */
+  .home-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); margin:2px 16px 18px; overflow:hidden; }
+  .hs-section { padding:16px 18px; }
+  .hs-section + .hs-section { border-top:1px solid var(--sep); }
+  .hs-eyebrow { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.6px; }
+  .hs-metrics { display:flex; gap:18px; }
+  .hs-metrics > div { flex:1; }
+  .hs-metric-num { font-size:21px; font-weight:700; letter-spacing:-.5px; line-height:1.1; }
+  .hs-metric-lbl { font-size:11.5px; color:var(--text3); margin-top:3px; }
+  .hs-cats-row { display:flex; align-items:center; gap:18px; }
 
   /* COMMITMENTS */
   .month-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 12px 16px; scrollbar-width: none; }
@@ -1551,7 +1556,7 @@ function Donut({ data, size=128, stroke=20 }) {
   );
 }
 
-function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, income, expenses, msis, commits, onEditCash, onEditIncome }) {
+function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, income, expenses, msis, commits, incomes, cards, payments, onEditCash, onEditIncome, onGoCards, onGoPagos }) {
   const cashVal = parseFloat(cash)||0;
   const incomeVal = parseFloat(income)||0;
   const proj = cashVal + incomeVal - thisMonth;
@@ -1585,47 +1590,50 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
     return { catData: top.map((d,i)=>({ ...d, color: PALETTE[i%PALETTE.length] })), catItems: items };
   })();
   const catTotal = catData.reduce((a,d)=>a+d.value,0);
+  // ── Mini calendario del mes actual ──
+  const calMK = monthKey(currentYear, currentMonth);
+  const calDim = new Date(currentYear, currentMonth+1, 0).getDate();
+  const calOff = (new Date(currentYear, currentMonth, 1).getDay()+6)%7;
+  const calMark = new Set();
+  const inMonth = (sm, rep) => { const e=new Date(parseInt(sm.split('-')[0]), parseInt(sm.split('-')[1])+(parseInt(rep)||1)-1, 1); return sm<=calMK && calMK<=monthKey(e.getFullYear(),e.getMonth()); };
+  (commits||[]).forEach(c=>{ if(inMonth(monthKey(parseInt(c.year),parseInt(c.month)), c.repeat)) calMark.add(Math.min(calDim, parseInt(c.day)||1)); });
+  (cards||[]).forEach(c=>{ if(c.payDay) calMark.add(Math.min(calDim, parseInt(c.payDay)||1)); });
+  (incomes||[]).forEach(c=>{ if(inMonth(monthKey(parseInt(c.year),parseInt(c.month)), c.repeat)) calMark.add(Math.min(calDim, parseInt(c.day)||1)); });
+  const calCells = [];
+  for(let i=0;i<calOff;i++) calCells.push(null);
+  for(let d=1;d<=calDim;d++) calCells.push(d);
     return (
-    <div className="home-grid">
+    <div className="home-card">
 
       {/* Dinero disponible */}
-      <section className="dash-card dash-cash" onClick={onEditCash} style={{cursor:'pointer'}}>
-        <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6}}>Dinero disponible</div>
+      <div className="hs-section hs-cash" onClick={onEditCash} style={{cursor:'pointer'}}>
+        <div className="hs-eyebrow">Dinero disponible</div>
         {cashVal>0
           ? <>
               <div style={{fontSize:33,fontWeight:700,letterSpacing:-1,marginTop:3,color:'var(--text)'}}>{fmt(cashVal)}</div>
-              <div style={{fontSize:12,marginTop:1,color: diff>=0?'var(--green)':'var(--red)'}}>
+              <div style={{fontSize:12.5,marginTop:2,color: diff>=0?'var(--green)':'var(--red)'}}>
                 {diff>=0 ? `Te alcanza para este mes · sobran ${fmt(diff)}` : `Te faltan ${fmt(-diff)} para este mes`}
               </div>
             </>
-          : <div style={{fontSize:15,color:'var(--blue-mid)',marginTop:4}}>Toca para poner cuánto dinero tienes</div>}
-      </section>
+          : <div style={{fontSize:15,color:'var(--blue-mid)',marginTop:5}}>Toca para poner cuánto dinero tienes</div>}
+      </div>
 
       {/* Métricas */}
-      <section className="dash-card dash-stats">
-        <div style={{display:'flex',gap:18}}>
-          <div className="dash-stat">
-            <div style={{fontSize:20,fontWeight:700,letterSpacing:-.4}}>{fmt(thisMonth)}</div>
-            <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Este mes</div>
-          </div>
-          <div className="dash-stat">
-            <div style={{fontSize:18,fontWeight:600,letterSpacing:-.3}}>{fmt(grandTotal)}</div>
-            <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Deuda total</div>
-          </div>
-          <div className="dash-stat">
-            <div style={{fontSize:18,fontWeight:600,letterSpacing:-.3,color:'var(--blue)'}}>{fmt(weekly)}</div>
-            <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Por semana</div>
-          </div>
+      <div className="hs-section hs-metrics-sec">
+        <div className="hs-metrics">
+          <div><div className="hs-metric-num">{fmt(thisMonth)}</div><div className="hs-metric-lbl">Este mes</div></div>
+          <div><div className="hs-metric-num">{fmt(grandTotal)}</div><div className="hs-metric-lbl">Deuda total</div></div>
+          <div><div className="hs-metric-num" style={{color:'var(--blue-mid)'}}>{fmt(weekly)}</div><div className="hs-metric-lbl">Por semana</div></div>
         </div>
-      </section>
+      </div>
 
-      {/* Gastos por categoría (dona) */}
+      {/* Gastos por categoría */}
       {catTotal>0 && (
-        <section className="dash-card dash-donut">
-          <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:10}}>Gastos por categoría · toca para ver detalle</div>
-          <div style={{display:'flex',alignItems:'center',gap:16}}>
-            <div style={{position:'relative',width:128,height:128,flexShrink:0}}>
-              <Donut data={catData} size={128} stroke={20}/>
+        <div className="hs-section hs-full">
+          <div className="hs-eyebrow" style={{marginBottom:10}}>Gastos por categoría · toca para ver detalle</div>
+          <div className="hs-cats-row">
+            <div style={{position:'relative',width:132,height:132,flexShrink:0}}>
+              <Donut data={catData} size={132} stroke={20}/>
               <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
                 <div style={{fontSize:15,fontWeight:700,letterSpacing:-.3}}>{fmt(catTotal)}</div>
                 <div style={{fontSize:10,color:'var(--text3)',marginTop:1}}>total</div>
@@ -1654,12 +1662,12 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
               ))}
             </div>
           )}
-        </section>
+        </div>
       )}
 
       {/* Próximos pagos */}
-      <section className="dash-card dash-upcoming">
-        <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:upcoming&&upcoming.length?6:4}}>Próximos pagos</div>
+      <div className="hs-section">
+        <div className="hs-eyebrow" style={{marginBottom:upcoming&&upcoming.length?6:4}}>Próximos pagos</div>
         {upcoming && upcoming.length>0
           ? upcoming.map((p,i)=>(
               <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderTop: i>0 ? '1px solid var(--sep)' : 'none'}}>
@@ -1679,12 +1687,12 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
               </div>
             ))
           : <div style={{fontSize:13,color:'var(--text3)',padding:'2px 0 4px'}}>Sin pagos próximos</div>}
-      </section>
+      </div>
 
       {/* A pagar por mes */}
       {months && months.length>0 && (
-        <section className="dash-card dash-months">
-          <div style={{fontSize:11,fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.6,marginBottom:4}}>A pagar por mes · todas</div>
+        <div className="hs-section">
+          <div className="hs-eyebrow" style={{marginBottom:4}}>A pagar por mes · todas</div>
           {months.map((m,i)=>(
             <div key={m.mk} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderTop: i>0 ? '1px solid var(--sep)' : 'none'}}>
               <span style={{fontSize:14,color:'var(--text)'}}>
@@ -1695,7 +1703,7 @@ function HomeSummary({ grandTotal, thisMonth, weekly, months, upcoming, cash, in
               </span>
             </div>
           ))}
-        </section>
+        </div>
       )}
 
     </div>
@@ -1872,6 +1880,7 @@ function CommitmentsScreen({ commits, cards, expenses, msis, payments, incomes, 
 // ─── APP ─────────────────────────────────────────────────────────────────────
 function App() {
   const [tab, setTab]           = useState('home');
+  const [view, setView]         = useStorage('fp_view', (typeof window!=='undefined' && window.innerWidth>=900) ? 'pc' : 'mobile');
   const [detailCard, setDetail] = useState(null); // card obj | null
   const [cards, setCards]       = useStorage('fp_cards', []);
   const [expenses, setExpenses] = useStorage('fp_expenses', []);
@@ -2122,7 +2131,8 @@ function App() {
   };
 
   return (
-    <div className="app-root">
+    <div className={`app-root ${view==='pc'?'as-pc':'as-mobile'}`}>
+      <button className="view-toggle" onClick={()=>setView(view==='pc'?'mobile':'pc')}>{view==='pc'?'Vista móvil':'Vista PC'}</button>
       <aside className="side">
         <div className="side-brand">Finanzas</div>
         <div className="side-eyebrow">Menú</div>
@@ -2142,7 +2152,7 @@ function App() {
               </div>
               {cards.length===0
                 ? <div className="empty"><div className="icon">📊</div><p>Sin datos aún. Agrega una tarjeta en la pestaña Tarjetas.</p></div>
-                : <HomeSummary {...homeTotals} months={monthsToPay} upcoming={upcomingPayments} cash={cash} income={income} expenses={expenses} msis={msis} commits={commits} onEditCash={()=>setCashModal(true)} onEditIncome={()=>setIncomeModal(true)}/>}
+                : <HomeSummary {...homeTotals} months={monthsToPay} upcoming={upcomingPayments} cash={cash} income={income} expenses={expenses} msis={msis} commits={commits} incomes={incomes} cards={cards} payments={payments} onEditCash={()=>setCashModal(true)} onEditIncome={()=>setIncomeModal(true)} onGoCards={()=>{setTab('cards');setDetail(null);}} onGoPagos={()=>{setTab('commits');setDetail(null);}}/>}
 
               {/* Respaldo de datos */}
               <div style={{margin:'4px 16px 20px',background:'var(--card)',borderRadius:'var(--radius)',boxShadow:'var(--shadow)',padding:'15px 16px'}}>
@@ -2234,6 +2244,7 @@ function App() {
 
       {/* BOTTOM NAV */}
       <nav className="bottom-nav">
+        <span className="nav-brand">Finanzas</span>
         <button className={`nav-btn ${tab==='home'?'active':''}`} onClick={()=>{setTab('home');setDetail(null);}}>
           <span className="nav-line"/>
           <span className="nav-lbl">Inicio</span>
@@ -2348,4 +2359,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
-
