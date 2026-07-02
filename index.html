@@ -399,24 +399,20 @@
   .color-dot.selected { border-color: var(--text); transform: scale(1.15); }
 
   /* GRADIENTS */
-  .grad-blue     { background: linear-gradient(135deg, #6aa6ff 0%, #3b7af0 45%, #2356c4 100%); }
-  .grad-navy     { background: linear-gradient(135deg, #4f74c8 0%, #294f9e 48%, #122f6b 100%); }
-  .grad-skyblue  { background: linear-gradient(135deg, #74cdf7 0%, #38a3e6 48%, #1d76bf 100%); }
-  .grad-cyan     { background: linear-gradient(135deg, #66d8e8 0%, #25b1c8 48%, #117e98 100%); }
-  .grad-teal     { background: linear-gradient(135deg, #5fd1c2 0%, #1ea99a 48%, #0e7068 100%); }
-  .grad-indigo   { background: linear-gradient(135deg, #8d92f2 0%, #5a5fe0 45%, #3535ab 100%); }
-  .grad-purple   { background: linear-gradient(135deg, #ad93ec 0%, #7a5cd6 45%, #4f33ab 100%); }
-  .grad-steel    { background: linear-gradient(135deg, #9bb5d6 0%, #6286b0 48%, #41608a 100%); }
-  .grad-graphite { background: linear-gradient(135deg, #7a86a0 0%, #4d5872 48%, #2c344a 100%); }
-  .grad-black    { background: linear-gradient(135deg, #4a5878 0%, #2b3753 50%, #141a2c 100%); }
-  /* (tonos cálidos retirados de la paleta; se conservan por compatibilidad) */
-  .grad-yellow  { background: linear-gradient(135deg, #6aa6ff 0%, #3b7af0 45%, #2356c4 100%); }
-  .grad-red     { background: linear-gradient(135deg, #6aa6ff 0%, #3b7af0 45%, #2356c4 100%); }
-  .grad-orange  { background: linear-gradient(135deg, #6aa6ff 0%, #3b7af0 45%, #2356c4 100%); }
-  .grad-green   { background: linear-gradient(135deg, #5fd1c2 0%, #1ea99a 48%, #0e7068 100%); }
-  .grad-pink    { background: linear-gradient(135deg, #ad93ec 0%, #7a5cd6 45%, #4f33ab 100%); }
-  .grad-gold    { background: linear-gradient(135deg, #9bb5d6 0%, #6286b0 48%, #41608a 100%); }
-  .grad-wine    { background: linear-gradient(135deg, #4f74c8 0%, #294f9e 48%, #122f6b 100%); }
+  .grad-yellow  { background: linear-gradient(145deg, #e8b332, #cf9a1e); }
+  .grad-red     { background: linear-gradient(145deg, #e53935, #c1272d); }
+  .grad-blue    { background: linear-gradient(145deg, #1f82dd, #1257a0); }
+  .grad-skyblue { background: linear-gradient(145deg, #039be5, #0379b0); }
+  .grad-purple  { background: linear-gradient(145deg, #ab47bc, #8b3a9c); }
+  .grad-orange  { background: linear-gradient(145deg, #f4511e, #cc3f12); }
+  .grad-green   { background: linear-gradient(145deg, #3a9540, #29702d); }
+  .grad-black    { background: linear-gradient(145deg, #3a3a3f, #141417); }
+  .grad-graphite { background: linear-gradient(145deg, #5b6573, #313842); }
+  .grad-teal     { background: linear-gradient(145deg, #16b9a6, #0c7a6e); }
+  .grad-pink     { background: linear-gradient(145deg, #ec4899, #b81d6e); }
+  .grad-indigo   { background: linear-gradient(145deg, #4254c5, #28307e); }
+  .grad-gold     { background: linear-gradient(145deg, #caa14e, #93702a); }
+  .grad-wine     { background: linear-gradient(145deg, #9b2742, #5f1628); }
 
   /* INICIO (limpio) */
   .home-card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); margin:2px 16px 18px; overflow:hidden; }
@@ -458,16 +454,20 @@ const { useState, useEffect, useCallback, useMemo } = React;
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
 const COLORS = [
-  { id:'blue',     cls:'grad-blue',     hex:'#3b82f6' },
-  { id:'navy',     cls:'grad-navy',     hex:'#234da6' },
-  { id:'skyblue',  cls:'grad-skyblue',  hex:'#38a8ec' },
-  { id:'cyan',     cls:'grad-cyan',     hex:'#1fb6cf' },
-  { id:'teal',     cls:'grad-teal',     hex:'#16a99b' },
-  { id:'indigo',   cls:'grad-indigo',   hex:'#5560e0' },
-  { id:'purple',   cls:'grad-purple',   hex:'#7a5cd6' },
-  { id:'steel',    cls:'grad-steel',    hex:'#6286b0' },
-  { id:'graphite', cls:'grad-graphite', hex:'#4a5570' },
-  { id:'black',    cls:'grad-black',    hex:'#2b3753' },
+  { id:'yellow',  cls:'grad-yellow',  hex:'#e8b332' },
+  { id:'red',     cls:'grad-red',     hex:'#e53935' },
+  { id:'blue',    cls:'grad-blue',    hex:'#1976d2' },
+  { id:'skyblue', cls:'grad-skyblue', hex:'#039be5' },
+  { id:'purple',  cls:'grad-purple',  hex:'#ab47bc' },
+  { id:'orange',  cls:'grad-orange',  hex:'#f4511e' },
+  { id:'green',   cls:'grad-green',   hex:'#388e3c' },
+  { id:'black',    cls:'grad-black',    hex:'#2b2b2e' },
+  { id:'graphite', cls:'grad-graphite', hex:'#576070' },
+  { id:'teal',     cls:'grad-teal',     hex:'#14b8a6' },
+  { id:'pink',     cls:'grad-pink',     hex:'#ec4899' },
+  { id:'indigo',   cls:'grad-indigo',   hex:'#3f51b5' },
+  { id:'gold',     cls:'grad-gold',     hex:'#c2993f' },
+  { id:'wine',     cls:'grad-wine',     hex:'#8e2436' },
 ];
 
 const CATS = [
@@ -777,7 +777,7 @@ function cardMonthsToPay(card, expenses, msis) {
 }
 
 function CardListItem({ card, expenses, msis, payments, onClick }) {
-  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[0];
+  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[2];
   const { totalToPay, thisCycle } = computeCardTotals(card, expenses, msis, payments);
   return (
     <div onClick={onClick} className={`card-flat ${colorInfo.cls}`}>
@@ -1042,7 +1042,7 @@ function CardDetail({ card, expenses, msis, payments, onBack, onEditCard,
     onToggleMsiPaid, onEditMsi, onAddMsi,
     onEditPayment, onAddPayment }) {
   const [activeTab, setActiveTab] = useState('gastos');
-  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[0];
+  const colorInfo = COLORS.find(c=>c.id===card.color)||COLORS[2];
   const { realAvail, usedPct, totalToPay, cutDays, payDays, totalCredit, extension, thisCycle } = computeCardTotals(card, expenses, msis, payments);
   // A pagar por mes (este mes + próximos 2), gastos + MSI
   const nextMonths = cardMonthsToPay(card, expenses, msis);
@@ -2056,7 +2056,7 @@ function App() {
         const date = dd >= today.getDate()
           ? new Date(currentYear, currentMonth, dd)
           : new Date(currentYear, currentMonth+1, dd);
-        const ci = COLORS.find(x=>x.id===c.color)||COLORS[0];
+        const ci = COLORS.find(x=>x.id===c.color)||COLORS[2];
         list.push({ id:c.id, name:c.name||'Sin nombre', hex:ci.hex, amount:t.thisCycle, days, date });
       }
     });
